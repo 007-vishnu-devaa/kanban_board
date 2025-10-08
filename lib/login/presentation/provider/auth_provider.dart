@@ -23,4 +23,14 @@ class LoginController extends StateNotifier<AsyncValue<UserEntity?>> {
       state = AsyncError(e, StackTrace.current);
     }
   }
+
+  Future<void> signUp(String email, String password) async {
+    state = const AsyncLoading();
+    try {
+      final user = await _repository.signUp(email, password);
+      state = AsyncData(user);
+    } catch (e) {
+      state = AsyncError(e, StackTrace.current);
+    }
+  }
 }
