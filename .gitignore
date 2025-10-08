@@ -26,10 +26,10 @@ ios/Podfile.lock
 # Android
 /android/.gradle/
 /android/app/*.keystore
-/android/app/google-services.json
+# /android/app/google-services.json
 
 # Firebase iOS
-/ios/Runner/GoogleService-Info.plist
+# /ios/Runner/GoogleService-Info.plist
 
 # Build outputs
 /build/
