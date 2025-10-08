@@ -5,8 +5,8 @@ import 'domain/model/task_entity.dart';
 import 'presentation/providers/task_provider.dart';
 
 
-class KanbanBoardPage extends ConsumerWidget {
-  const KanbanBoardPage({super.key});
+class HomePage extends ConsumerWidget {
+  const HomePage({super.key});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {

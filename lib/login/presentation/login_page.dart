@@ -17,25 +17,33 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   final ValueNotifier<bool> _obscureTextNotifier = ValueNotifier<bool>(true);
 
   @override
-  Widget build(BuildContext context) {
-    // final loginState = ref.watch(loginControllerProvider);
+  void dispose() {
+    emailController.dispose();
+    passwordController.dispose();
+    _obscureTextNotifier.dispose();
+    super.dispose();
+  }
 
-    // ref.listen(loginControllerProvider, (prev, next) {
-    //   next.whenOrNull(
-    //     data: (user) {
-    //       if (user != null) {
-    //         ScaffoldMessenger.of(context).showSnackBar(
-    //           SnackBar(content: Text('Login successful! Welcome ${user.email}')),
-    //         );
-    //       }
-    //     },
-    //     error: (err, _) {
-    //       ScaffoldMessenger.of(context).showSnackBar(
-    //         SnackBar(content: Text(err.toString())),
-    //       );
-    //     },
-    //   );
-    // });
+  @override
+  Widget build(BuildContext context) {
+  ref.listen(loginControllerProvider, (prev, next) {
+      next.whenOrNull(
+        data: (user) {
+          if (user != null && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text('Login successful! Welcome ${user.email}')),
+            );
+          }
+        },
+        error: (err, _) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(content: Text(err.toString())),
+            );
+          }
+        },
+      );
+    });
 
     return Scaffold(
       appBar: AppBar(title: const Text('Login')),
@@ -106,10 +114,22 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             SizedBox(
               width: double.infinity, // Makes button full width of parent
               child: ElevatedButton(
-                onPressed: () {
-                  // ref.read(loginControllerProvider.notifier)
-                  //     .login(emailController.text.trim(), passwordController.text.trim());
-                  Navigator.push(context, MaterialPageRoute(builder: (context) => const KanbanBoardPage()));
+                onPressed: () async {
+                  await ref
+                      .read(loginControllerProvider.notifier)
+                      .login(emailController.text.trim(), passwordController.text.trim());
+                  if (!mounted) return;
+                  final state = ref.read(loginControllerProvider);
+                  state.whenOrNull(
+                    data: (user) {
+                      if (user != null) {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (_) => const HomePage()),
+                        );
+                      }
+                    },
+                  );
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.teal, // Button color
