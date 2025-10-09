@@ -13,8 +13,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final emailController = TextEditingController(text: 'vishnu123@gmail.com');
+  final passwordController = TextEditingController(text: 'Vishnu123@');
   final ValueNotifier<bool> _obscureTextNotifier = ValueNotifier<bool>(true);
 
   @override
@@ -66,7 +66,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget pageUI({required BuildContext context, required bool isLoading, required bool isOnline}) {
-    return Center(
+    return SingleChildScrollView(child: Center(
         child: Container(
           margin: const EdgeInsets.all(16.0),
           padding: const EdgeInsets.all(16.0),
@@ -259,6 +259,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ],
           ),
         ),
-      );
+      ));
   }
   }
