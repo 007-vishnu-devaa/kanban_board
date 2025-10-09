@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
 import '../../kanban_board/home_page.dart';
@@ -176,6 +177,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                           (!isOnline || isLoading)
                               ? null
                               : () async {
+                                     if(emailController.text.isEmpty || passwordController.text.isEmpty){
+                                      FlutterToast(toastMsg: 'Please enter email and password').toast();
+                      }
+                      else{
                                 await ref
                                     .read(loginControllerProvider.notifier)
                                     .login(
@@ -196,6 +201,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                     }
                                   },
                                 );
+                      }
                               },
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.teal, // Button color
@@ -232,6 +238,10 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       (!isOnline || isLoading)
                           ? null
                           : () async {
+                             if(emailController.text.isEmpty || passwordController.text.isEmpty){
+                                      FlutterToast(toastMsg: 'Please enter email and password').toast();
+                      }
+                      else{
                             await ref
                                 .read(loginControllerProvider.notifier)
                                 .signUp(
@@ -252,6 +262,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 }
                               },
                             );
+                      }
                           },
                   child: const Text('Sign up', style: TextStyle(fontSize: 16)))),
               if (!isOnline) const SizedBox(height: 8),
