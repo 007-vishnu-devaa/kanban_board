@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:fluttertoast/fluttertoast.dart';
+import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/login/presentation/login_page.dart';
 import 'domain/model/task_entity.dart';
@@ -42,14 +42,7 @@ void showConfirmationDialog(BuildContext context) {
                       ),
             onPressed: () async {
              Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
-              Fluttertoast.showToast(
-                  msg: "Signed out successfully",
-                  toastLength: Toast.LENGTH_SHORT,
-                  gravity: ToastGravity.BOTTOM,
-                  timeInSecForIosWeb: 2,
-                  backgroundColor: Colors.teal,
-                  textColor: Colors.white,
-                );
+             FlutterToast(toastMsg: "Signed out successfully").toast();
             },
             child: const Text('Yes'),
           ),
@@ -78,14 +71,16 @@ void showConfirmationDialog(BuildContext context) {
         title: const Text('Kanban Board'),actions: [
         IconButton(onPressed: (){
           showConfirmationDialog(context);
-        }, icon: Icon(Icons.logout_outlined))
+        }, icon: Icon(Icons.logout_rounded, size: 22))
       ],),
       body: Consumer(
         builder: (context, ref, _) {
           final isLoading = ref.watch(tasksLoadingProvider);
           final refresh = ref.read(refreshTasksProvider);
 
-          return RefreshIndicator(
+          return Stack(
+            children: [
+               RefreshIndicator(
             onRefresh: refresh,
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
@@ -96,7 +91,7 @@ void showConfirmationDialog(BuildContext context) {
 
                   return Container(
                     width: MediaQuery.of(context).size.width * 0.8,
-                    height: MediaQuery.of(context).size.height * 0.8,
+                    height: MediaQuery.of(context).size.height * 0.85,
                     margin: const EdgeInsets.symmetric(
                       vertical: 16,
                       horizontal: 8,
@@ -109,17 +104,39 @@ void showConfirmationDialog(BuildContext context) {
                     child: DragTarget<Task>(
                       onWillAccept: (data) => data != null && data.status != column,
                       onAccept: (data) {
-                        ref.read(taskNotifierProvider.notifier).changeTaskStatus(data.id, column);
-                      },
+                         final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
+                        if (!isOnline) {
+                          FlutterToast(toastMsg: 'No internet connection.').toast();
+                          return;
+                        }
+
+                          // Capture providers and messenger now to avoid using ref/context after async gaps
+                          final repo = ref.read(taskRepositoryProvider);
+                          final notifier = ref.read(taskNotifierProvider.notifier);
+                          final loadingNotifier = ref.read(tasksLoadingProvider.notifier);
+                          final oldStatus = data.status;
+
+                          // Optimistic local update
+                          
+                          notifier.changeTaskStatus(data.id, column);
+                          loadingNotifier.state = true;
+
+                          // Perform async update without awaiting here (fire-and-forget pattern using IIFE)
+                          () async {
+                            try {
+                              await repo.updateTask(data.copyWith(status: column));
+                            } catch (e) {
+                              // Rollback local change on error
+                              notifier.changeTaskStatus(data.id, oldStatus);
+                              FlutterToast(toastMsg: '${data.title} Failed to move task due to: $e').toast();
+                            } finally {
+                              loadingNotifier.state = false;
+                            }
+                          }();
+                        },
                       builder: (context, candidateData, rejectedData) {
                         return Column(
                           children: [
-                            if (isLoading)
-                              const Padding(
-                                padding: EdgeInsets.symmetric(vertical: 8.0),
-                                child: Center(child: CircularProgressIndicator()),
-                              ),
-                              const SizedBox(height: 4),
                             Text(
                               column,
                               textAlign: TextAlign.center,
@@ -155,7 +172,14 @@ void showConfirmationDialog(BuildContext context) {
                 }).toList(),
               ),
             ),
-          );
+          ),
+           if (isLoading)
+                const Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: Center(child: CircularProgressIndicator(color: Colors.teal)),
+                ),
+            ],
+          ) ;
         },
       ),
       floatingActionButton: FloatingActionButton(
@@ -174,94 +198,100 @@ void showConfirmationDialog(BuildContext context) {
     showDialog(
       context: context,
       builder: (context) {
-        return AlertDialog(
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-          title: const Text('Add Task', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
-          contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-          content: SizedBox(
-        width: MediaQuery.of(context).size.width,
-        child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              TextField(
-                controller: titleController,
-                decoration:  InputDecoration(
-                labelText: 'Title',
-                border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6.0),
+        // local mutable state for the dialog
+        var isSubmitting = false;
+
+        return StatefulBuilder(builder: (context, setState) {
+          return AlertDialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
+            title: const Text('Add Task', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
+            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            content: Stack(
+              children: [
+                if (isSubmitting)
+                  Positioned.fill(
+                    child: const Center(child: CircularProgressIndicator(color: Colors.teal)),
+                  ),
+                  SizedBox(
+                width: MediaQuery.of(context).size.width,
+                child: Column(mainAxisSize: MainAxisSize.min, children: [
+                  TextField(
+                      controller: titleController,
+                      enabled: !isSubmitting,
+                      decoration: InputDecoration(
+                        labelText: 'Title',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+                      )),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: descriptionController,
+                    enabled: !isSubmitting,
+                    decoration: InputDecoration(
+                      labelText: 'Description',
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
                     ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6.0),
-                    ),
-              )),
-              const SizedBox(height: 12),
-              TextField(
-                controller: descriptionController,
-               decoration:  InputDecoration(
-                labelText: 'Description',
-                border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6.0),
-                    ),
-                    focusedBorder: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(6.0),
-                    ),
+                    maxLines: 3,
+                  ),
+                ])), ],
+            ),
+            actions: [
+              TextButton(
+                style: OutlinedButton.styleFrom(
+                  side: const BorderSide(color: Colors.teal),
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                ),
+                onPressed: isSubmitting ? null : () => Navigator.pop(context),
+                child: const Text('Cancel'),
               ),
-               maxLines: 3,
+              const SizedBox(width: 2),
+              ElevatedButton(
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.teal,
+                  foregroundColor: Colors.white,
+                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                  padding: const EdgeInsets.symmetric(horizontal: 14),
+                ),
+                onPressed: isSubmitting
+                    ? null
+                    : () async {
+                        final title = titleController.text.trim();
+                        final description = descriptionController.text.trim();
+
+                        if (title.isEmpty) return;
+
+                        // Check connectivity before attempting to add
+                        final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
+                        if (!isOnline) {
+                          FlutterToast(toastMsg: 'No internet connection. Cannot add task.').toast();
+                          return;
+                        }
+
+                        // Capture repo/messenger before awaiting
+                        final repo = ref.read(taskRepositoryProvider);
+                        final messenger = ScaffoldMessenger.of(context);
+
+                        // Create task with empty id and let repository assign id
+                        final task = Task(id: '', title: title, description: description, status: 'To Do');
+
+                        setState(() => isSubmitting = true);
+                        try {
+                          await repo.addTask(task);
+                          // Close dialog on success
+                          if (Navigator.canPop(context)) Navigator.pop(context);
+                        } catch (e) {
+                          // Keep dialog open and re-enable inputs
+                          setState(() => isSubmitting = false);
+                           FlutterToast(toastMsg: 'Failed to add task: $e').toast();
+                        }
+                      },
+                child:  const Text('Save'),
               ),
             ],
-          )),
-          actions: [
-            TextButton(
-              style: OutlinedButton.styleFrom(
-                        side: BorderSide(color: Colors.teal),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14), 
-                      ),
-              onPressed: () => Navigator.pop(context),
-              child: const Text('Cancel'),
-            ),
-            const SizedBox(width: 2),
-            ElevatedButton(
-              style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal, 
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 14), 
-                      ),
-              onPressed: () async {
-                final title = titleController.text.trim();
-                final description = descriptionController.text.trim();
-                if (title.isEmpty) return;
-
-                // Check connectivity before attempting to add
-                final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
-                if (!isOnline) {
-                  ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('No internet connection. Cannot add task.')));
-                  return;
-                }
-
-                // Create task with empty id and let repository assign id
-                final task = Task(
-                  id: '',
-                  title: title,
-                  description: description,
-                  status: 'To Do',
-                );
-
-                // Save via repository (repo will generate id if needed)
-                await ref.read(taskRepositoryProvider).addTask(task);
-
-                // Optional: update local Riverpod state (repository stream will update state)
-                // ref.read(taskNotifierProvider.notifier).updateTask(task);
-
-                Navigator.pop(context);
-              },
-              child: const Text('Save'),
-            ),
-          ],
-        );
+          );
+        });
       },
     );
   }

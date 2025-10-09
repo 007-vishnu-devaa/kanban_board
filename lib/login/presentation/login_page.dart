@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
-
 import '../../kanban_board/home_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -66,7 +65,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
   }
 
   Widget pageUI({required BuildContext context, required bool isLoading, required bool isOnline}) {
-    return SingleChildScrollView(child: Center(
+    return SingleChildScrollView(
+      child: ConstrainedBox(
+    constraints: BoxConstraints(
+      minHeight: MediaQuery.of(context).size.height,
+    ),
+    child: Center(
         child: Container(
           margin: const EdgeInsets.all(16.0),
           padding: const EdgeInsets.all(16.0),
@@ -259,6 +263,6 @@ class _LoginPageState extends ConsumerState<LoginPage> {
             ],
           ),
         ),
-      ));
+      )));
   }
   }
