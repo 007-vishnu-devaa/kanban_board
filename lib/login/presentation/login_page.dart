@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
+import '../../core/widgets/circular_indicator.dart';
 import '../../kanban_board/home_page.dart';
 
 class LoginPage extends ConsumerStatefulWidget {
@@ -13,8 +14,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final emailController = TextEditingController();
-  final passwordController = TextEditingController();
+  final emailController = TextEditingController(text: 'vishnu123@gmail.com');
+  final passwordController = TextEditingController(text:'Vishnu123@');
   final ValueNotifier<bool> _obscureTextNotifier = ValueNotifier<bool>(true);
 
   @override
@@ -36,18 +37,11 @@ class _LoginPageState extends ConsumerState<LoginPage> {
       next.whenOrNull(
         data: (user) {
           if (user != null && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text('Login successful! Welcome ${user.email}'),
-              ),
-            );
           }
         },
         error: (err, _) {
           if (mounted) {
-            ScaffoldMessenger.of(
-              context,
-            ).showSnackBar(SnackBar(content: Text(err.toString())));
+            FlutterToast(toastMsg: err.toString()).toast();
           }
         },
       );
@@ -58,7 +52,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
         children: [
           pageUI(context: context, isLoading: isLoading, isOnline:isOnline),
           isLoading
-                  ? const Center(child: CircularProgressIndicator(color: Colors.teal))
+                  ? CircularIndicator().loading()
                   : SizedBox.shrink()
         ],
       )

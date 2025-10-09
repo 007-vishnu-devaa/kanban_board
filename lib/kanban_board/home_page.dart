@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/login/presentation/login_page.dart';
+import '../core/widgets/circular_indicator.dart';
 import 'domain/model/task_entity.dart';
 import 'presentation/providers/task_provider.dart';
 import '../../core/connectivity/connectivity_service.dart';
@@ -137,6 +138,7 @@ void showConfirmationDialog(BuildContext context) {
                       builder: (context, candidateData, rejectedData) {
                         return Column(
                           children: [
+                            SizedBox(height: 12),
                             Text(
                               column,
                               textAlign: TextAlign.center,
@@ -147,22 +149,32 @@ void showConfirmationDialog(BuildContext context) {
                             ),
                             const SizedBox(height: 4),
                             Expanded(
-                              child: ListView(
-                                children: columnTasks
-                                    .map((task) => Draggable<Task>(
-                                          data: task,
-                                          feedback: Material(
-                                            elevation: 6,
-                                            child: TaskCard(task: task),
-                                          ),
-                                          childWhenDragging: Opacity(
-                                            opacity: 0.5,
-                                            child: TaskCard(task: task),
-                                          ),
-                                          child: TaskCard(task: task),
-                                        ))
-                                    .toList(),
-                              ),
+                              child: columnTasks.isEmpty
+                                  ? Center(
+                                      child: Text(
+                                        'No Data Available',
+                                        style: TextStyle(
+                                          fontSize: 16,
+                                          color: Colors.grey[600],
+                                        ),
+                                      ),
+                                    )
+                                  : ListView(
+                                      children: columnTasks
+                                          .map((task) => Draggable<Task>(
+                                                data: task,
+                                                feedback: Material(
+                                                  elevation: 6,
+                                                  child: TaskCard(task: task),
+                                                ),
+                                                childWhenDragging: Opacity(
+                                                  opacity: 0.5,
+                                                  child: TaskCard(task: task),
+                                                ),
+                                                child: TaskCard(task: task),
+                                              ))
+                                          .toList(),
+                                    ),
                             ),
                           ],
                         );
@@ -174,7 +186,9 @@ void showConfirmationDialog(BuildContext context) {
             ),
           ),
            if (isLoading)
-                CircularProgressIndicator(color: Colors.teal)),
+                 Padding(
+                  padding: EdgeInsets.symmetric(vertical: 8.0),
+                  child: CircularIndicator().loading(),
                 ),
             ],
           ) ;
@@ -200,17 +214,12 @@ void showConfirmationDialog(BuildContext context) {
         var isSubmitting = false;
 
         return StatefulBuilder(builder: (context, setState) {
-          return AlertDialog(
+          return Stack(children: [
+            AlertDialog(
             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
             title: const Text('Add Task', textAlign: TextAlign.center, style: TextStyle(fontSize: 20, fontWeight: FontWeight.w600)),
             contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
-            content: Stack(
-              children: [
-                if (isSubmitting)
-                  Positioned.fill(
-                    child: const Center(child: CircularProgressIndicator(color: Colors.teal)),
-                  ),
-                  SizedBox(
+            content: SizedBox(
                 width: MediaQuery.of(context).size.width,
                 child: Column(mainAxisSize: MainAxisSize.min, children: [
                   TextField(
@@ -232,8 +241,8 @@ void showConfirmationDialog(BuildContext context) {
                     ),
                     maxLines: 3,
                   ),
-                ])), ],
-            ),
+                ])),
+                 
             actions: [
               TextButton(
                 style: OutlinedButton.styleFrom(
@@ -267,9 +276,8 @@ void showConfirmationDialog(BuildContext context) {
                           return;
                         }
 
-                        // Capture repo/messenger before awaiting
+                        // Capture repo before awaiting
                         final repo = ref.read(taskRepositoryProvider);
-                        final messenger = ScaffoldMessenger.of(context);
 
                         // Create task with empty id and let repository assign id
                         final task = Task(id: '', title: title, description: description, status: 'To Do');
@@ -288,7 +296,12 @@ void showConfirmationDialog(BuildContext context) {
                 child:  const Text('Save'),
               ),
             ],
-          );
+          ),
+          if (isSubmitting)
+                  Positioned.fill(
+                    child: CircularIndicator().loading(),
+                  )
+          ],);
         });
       },
     );

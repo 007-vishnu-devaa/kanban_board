@@ -3,8 +3,13 @@ import '../../data/model/task_dto.dart';
 import '../../domain/model/task_entity.dart';
 
 class TaskRepository {
-  // Use a getter so `FirebaseFirestore.instance` is accessed lazily.
-  FirebaseFirestore get _firestore => FirebaseFirestore.instance;
+  // Allow injecting a FirebaseFirestore instance for tests; default to the
+  // singleton instance in production.
+  // Using dynamic here allows test code to inject a lightweight fake
+  // implementation without needing to implement the full Firebase API.
+  final dynamic _firestore;
+
+  TaskRepository({dynamic firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   Future<void> addTask(Task task) async {
     try {
@@ -50,7 +55,10 @@ class TaskRepository {
   Future<List<Task>> getTasksOnce() async {
     try {
       final snapshot = await _firestore.collection('tasks').get();
-      return snapshot.docs.map((doc) => TaskDTO.fromDocument(doc).toEntity()).toList();
+      return snapshot.docs
+          .map((doc) => TaskDTO.fromDocument(doc).toEntity())
+          .toList()
+          .cast<Task>();
     } on Exception catch (e) {
       throw Exception('Failed to fetch tasks: $e');
     }
@@ -58,14 +66,19 @@ class TaskRepository {
 
   Stream<List<Task>> getTasksStream() {
     try {
-      return _firestore.collection('tasks').snapshots().map((snapshot) {
+      final stream = _firestore.collection('tasks').snapshots().map((snapshot) {
         return snapshot.docs
             .map((doc) => TaskDTO.fromDocument(doc).toEntity())
-            .toList();
-      }).handleError((error) {
+            .toList()
+            .cast<Task>();
+      }).cast<List<Task>>();
+
+      stream.handleError((error) {
         // Let callers handle the error; also log for debugging
         // debugPrint('getTasksStream error: $error');
       });
+
+      return stream;
     } catch (e) {
       // If accessing instance threw synchronously, return an empty stream with an error.
       return Stream.error(e);
