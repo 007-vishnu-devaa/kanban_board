@@ -174,9 +174,7 @@ void showConfirmationDialog(BuildContext context) {
             ),
           ),
            if (isLoading)
-                const Padding(
-                  padding: EdgeInsets.symmetric(vertical: 8.0),
-                  child: Center(child: CircularProgressIndicator(color: Colors.teal)),
+                CircularProgressIndicator(color: Colors.teal)),
                 ),
             ],
           ) ;
