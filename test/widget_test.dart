@@ -5,26 +5,36 @@
 // gestures. You can also use WidgetTester to find child widgets in the widget
 // tree, read text, and verify that the values of widget properties are correct.
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
 import 'package:kanbanboard/main.dart';
+import 'package:kanbanboard/login/domain/repositories/auth_repositories.dart';
+import 'package:kanbanboard/login/domain/model/user_entity.dart';
+import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
+
+class FakeAuthRepository implements AuthRepository {
+  @override
+  Future<UserEntity?> login(String email, String password) async => null;
+
+  @override
+  Future<UserEntity?> signUp(String email, String password) async => null;
+}
 
 void main() {
   testWidgets('Counter increments smoke test', (WidgetTester tester) async {
-    // Build our app and trigger a frame.
-    await tester.pumpWidget(const MyApp());
+    // Build our app wrapped in ProviderScope and stub connectivity so the
+    // connectivity StreamProvider doesn't start network checks/timers.
+    // Provide a fake AuthRepository so the production Firebase-backed
+    // implementation is not instantiated (avoids Firebase.initializeApp()
+    // and related errors during tests).
+    await tester.pumpWidget(ProviderScope(overrides: [
+      connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
+      authRepositoryProvider.overrideWithValue(FakeAuthRepository()),
+    ], child: const MyApp()));
 
-    // Verify that our counter starts at 0.
-    expect(find.text('0'), findsOneWidget);
-    expect(find.text('1'), findsNothing);
-
-    // Tap the '+' icon and trigger a frame.
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pump();
-
-    // Verify that our counter has incremented.
-    expect(find.text('0'), findsNothing);
-    expect(find.text('1'), findsOneWidget);
+    // Verify that the login UI is shown (Sign In button present).
+    expect(find.text('Sign In'), findsOneWidget);
   });
 }

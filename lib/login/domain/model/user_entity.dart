@@ -1,3 +1,4 @@
+// coverage:ignore-file
 class UserEntity {
   final String uid;
   final String email;

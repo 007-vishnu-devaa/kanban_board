@@ -1,4 +1,5 @@
 
+// coverage:ignore-file
 import '../model/user_entity.dart';
 
 abstract class AuthRepository {

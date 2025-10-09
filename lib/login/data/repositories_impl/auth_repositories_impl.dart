@@ -4,7 +4,11 @@ import '../../domain/model/user_entity.dart';
 import '../../domain/repositories/auth_repositories.dart';
 
 class AuthRepositoryImpl implements AuthRepository {
-  final FirebaseAuth _firebaseAuth = FirebaseAuth.instance;
+  final FirebaseAuth _firebaseAuth;
+
+  /// Allow injection of a [FirebaseAuth] instance for testing. If none is
+  /// provided, the default [FirebaseAuth.instance] is used.
+  AuthRepositoryImpl({FirebaseAuth? firebaseAuth}) : _firebaseAuth = firebaseAuth ?? FirebaseAuth.instance;
 
   @override
   Future<UserEntity?> login(String email, String password) async {
@@ -18,7 +22,7 @@ class AuthRepositoryImpl implements AuthRepository {
         return UserEntity(uid: user.uid, email: user.email ?? '');
       }
     } on FirebaseAuthException catch (e) {
-      FlutterToast(toastMsg: e.message ?? 'Sign In failed').toast();
+      FlutterToast(toastMsg: e.message ?? 'Please enter valid email and password').toast();
     }
     return null;
   }

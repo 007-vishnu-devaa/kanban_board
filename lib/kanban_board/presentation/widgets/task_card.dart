@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
+import '../../../core/widgets/circular_indicator.dart';
 import '../../domain/model/task_entity.dart';
 import '../providers/task_provider.dart';
 import '../../../core/connectivity/connectivity_service.dart';
@@ -19,7 +20,9 @@ void showEditTaskDialog(BuildContext context, WidgetRef ref, Task task) {
       var isSubmitting = false;
 
       return StatefulBuilder(builder: (context, setState) {
-        return AlertDialog(
+        return Stack(
+          children: [
+            AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           title: Text('Edit Task', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
            contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
@@ -104,8 +107,14 @@ void showEditTaskDialog(BuildContext context, WidgetRef ref, Task task) {
                         messenger.showSnackBar(SnackBar(content: Text('Failed to update task: $e')));
                       }
                     },
-              child: isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Save'),
+              child: const Text('Save'),
             ),
+          ],
+        ),
+           if(isSubmitting)
+                  Positioned.fill(
+                    child: CircularIndicator().loading(),
+                  ),
           ],
         );
       });
@@ -123,7 +132,9 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
       var isSubmitting = false;
 
       return StatefulBuilder(builder: (context, setState) {
-        return AlertDialog(
+        return Stack(children: [
+       
+AlertDialog(
           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
           title: const Text('Confirmation!', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
     content:SizedBox(
@@ -177,10 +188,15 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
                         messenger.showSnackBar(SnackBar(content: Text('${task.title} Failed to delete task: $e')));
                       }
                     },
-              child: isSubmitting ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2)) : const Text('Yes'),
+              child: const Text('Yes'),
             ),
           ],
-        );
+        ),
+           if(isSubmitting)
+                  Positioned.fill(
+                    child: CircularIndicator().loading(),
+                  ),
+        ]);
       });
     },
   );
@@ -188,6 +204,8 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    final connectivity = ref.watch(connectivityStatusProvider);
+    final isOnline = connectivity.asData?.value ?? true;
     return Card(
       elevation: 0,
       margin: const EdgeInsets.symmetric(vertical: 4),
@@ -201,27 +219,40 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
            Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              SizedBox(width: MediaQuery.of(context).size.width * 0.5,
-              child: Padding(
-                padding: const EdgeInsets.only(left: 8),
-                child: Text(task.title,
-                style:
-                    const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)))),
+              SizedBox(
+                width: MediaQuery.of(context).size.width * 0.5,
+                child: Padding(
+                  padding: const EdgeInsets.only(left: 8),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(task.title, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                      if (!isOnline)
+                        Padding(
+                          padding: const EdgeInsets.only(top: 4),
+                          child: Row(
+                            children: [
+                              Icon(Icons.cloud_off, size: 14, color: Colors.red[700]),
+                              const SizedBox(width: 6),
+                              Text('Offline', style: TextStyle(fontSize: 12, color: Colors.red[700])),
+                            ],
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              ),
                     Row(
                       mainAxisAlignment: MainAxisAlignment.end,
                       children: [
                       IconButton(
-                  icon: const Icon(Icons.edit_outlined, size: 20),
-                  onPressed: () {
-                    showEditTaskDialog(context, ref, task);
-                  },
-                ),
-                 IconButton(
-                  icon: const Icon(Icons.delete_outline, size: 20),
-                  onPressed: () {
-                    showConfirmationDialog(context, ref, task);
-                  },
-                )
+                        icon: const Icon(Icons.edit_outlined, size: 20),
+                        onPressed: isOnline ? () => showEditTaskDialog(context, ref, task) : null,
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.delete_outline, size: 20),
+                        onPressed: isOnline ? () => showConfirmationDialog(context, ref, task) : null,
+                      ),
                     ],)
                      ]),
           Padding(

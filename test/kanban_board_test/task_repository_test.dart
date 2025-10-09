@@ -1,0 +1,132 @@
+import 'dart:async';
+
+import 'package:flutter_test/flutter_test.dart';
+import 'package:kanbanboard/kanban_board/data/repositories_impl/task_repositories_impl.dart';
+import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
+import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
+
+// Minimal fake Firestore pieces
+class FakeDocSnapshot {
+  final String id;
+  final Map<String, dynamic> _data;
+  FakeDocSnapshot(this.id, this._data);
+  Map<String, dynamic> data() => _data;
+}
+
+class FakeQuerySnapshot {
+  final List<FakeDocSnapshot> docs;
+  FakeQuerySnapshot(this.docs);
+}
+
+class FakeDocRef {
+  final String id;
+  final Map<String, FakeDocSnapshot> _store;
+  final StreamController<FakeQuerySnapshot> _controller;
+
+  FakeDocRef(this.id, this._store, this._controller);
+
+  Future<void> set(Map<String, dynamic> map) async {
+    _store[id] = FakeDocSnapshot(id, map);
+    _controller.add(FakeQuerySnapshot(_store.values.toList()));
+  }
+
+  Future<void> delete() async {
+    _store.remove(id);
+    _controller.add(FakeQuerySnapshot(_store.values.toList()));
+  }
+}
+
+class FakeCollection {
+  final Map<String, FakeDocSnapshot> _store = {};
+  final _controller = StreamController<FakeQuerySnapshot>.broadcast();
+
+  FakeDocRef doc([String? id]) {
+    final docId = id ?? 'doc_${_store.length + 1}';
+    // ensure there is an entry
+    _store.putIfAbsent(docId, () => FakeDocSnapshot(docId, {}));
+    return FakeDocRef(docId, _store, _controller);
+  }
+
+  Future<void> setDoc(String id, Map<String, dynamic> map) async {
+    _store[id] = FakeDocSnapshot(id, map);
+    _controller.add(FakeQuerySnapshot(_store.values.toList()));
+  }
+
+  Future<void> deleteDoc(String id) async {
+    _store.remove(id);
+    _controller.add(FakeQuerySnapshot(_store.values.toList()));
+  }
+
+  Future<FakeQuerySnapshot> get() async => FakeQuerySnapshot(_store.values.toList());
+
+  Stream<FakeQuerySnapshot> snapshots() => _controller.stream;
+}
+
+class FakeFirestore {
+  final FakeCollection collectionObj = FakeCollection();
+  FakeCollection collection(String name) => collectionObj;
+}
+
+void main() {
+  group('TaskRepository with fake firestore', () {
+    late FakeFirestore fakeFs;
+    late TaskRepository repo;
+
+    setUp(() {
+      fakeFs = FakeFirestore();
+      repo = TaskRepository(firestore: fakeFs as dynamic);
+    });
+
+    test('addTask assigns id and stores document', () async {
+      final task = Task(id: '', title: 'A', description: 'B', status: 'todo');
+      await repo.addTask(task);
+
+      final snapshot = await fakeFs.collection('tasks').get();
+      expect(snapshot.docs.length, 1);
+  final stored = snapshot.docs.first;
+  final dto = TaskDTO.fromMap(stored.data());
+  expect(dto.title, 'A');
+    });
+
+    test('updateTask overwrites document', () async {
+      final task = Task(id: 'x', title: 'X', description: 'D', status: 'todo');
+      await fakeFs.collection('tasks').setDoc('x', TaskDTO.fromEntity(task).toMap());
+
+      final updated = task.copyWith(title: 'X2');
+      await repo.updateTask(updated);
+
+      final snap = await fakeFs.collection('tasks').get();
+  final stored = snap.docs.firstWhere((d) => d.id == 'x');
+  expect(stored.data()['title'], 'X2');
+    });
+
+    test('deleteTask removes document', () async {
+      final task = Task(id: 'del', title: 'D', description: 'D', status: 'todo');
+      await fakeFs.collection('tasks').setDoc('del', TaskDTO.fromEntity(task).toMap());
+      await repo.deleteTask('del');
+  final snap = await fakeFs.collection('tasks').get();
+  expect(snap.docs.any((d) => d.id == 'del'), false);
+    });
+
+    test('getTasksOnce returns stored tasks', () async {
+      final t1 = Task(id: 'a', title: 'A', description: 'd', status: 'todo');
+      await fakeFs.collection('tasks').setDoc('a', TaskDTO.fromEntity(t1).toMap());
+      final tasks = await repo.getTasksOnce();
+      expect(tasks.any((t) => t.id == 'a'), true);
+    });
+
+    test('getTasksStream emits changes', () async {
+      final stream = repo.getTasksStream();
+      final events = <List<Task>>[];
+      final sub = stream.listen((list) => events.add(list));
+
+      final t1 = Task(id: 's1', title: 'S1', description: 'd', status: 'todo');
+      await fakeFs.collection('tasks').setDoc('s1', TaskDTO.fromEntity(t1).toMap());
+      // Give time for stream event
+      await Future.delayed(Duration(milliseconds: 10));
+
+      expect(events.length, greaterThanOrEqualTo(1));
+      await sub.cancel();
+    });
+  });
+}

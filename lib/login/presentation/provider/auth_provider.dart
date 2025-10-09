@@ -1,36 +1,14 @@
+// coverage:ignore-file
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
 import '../../data/repositories_impl/auth_repositories_impl.dart';
 import '../../domain/model/user_entity.dart';
+import '../../domain/repositories/auth_repositories.dart';
+import '../notifier/auth_notifier.dart';
 
-final authRepositoryProvider = Provider((ref) => AuthRepositoryImpl());
+final authRepositoryProvider = Provider<AuthRepository>((ref) => AuthRepositoryImpl());
 
 final loginControllerProvider =
-    StateNotifierProvider<LoginController, AsyncValue<UserEntity?>>(
-  (ref) => LoginController(ref.read(authRepositoryProvider)),
+    StateNotifierProvider<LoginNotifier, AsyncValue<UserEntity?>>(
+  (ref) => LoginNotifier(ref.read(authRepositoryProvider)),
 );
-
-class LoginController extends StateNotifier<AsyncValue<UserEntity?>> {
-  final AuthRepositoryImpl _repository;
-  LoginController(this._repository) : super(const AsyncData(null));
-
-  Future<void> login(String email, String password) async {
-    state = const AsyncLoading();
-    try {
-      final user = await _repository.login(email, password);
-      state = AsyncData(user);
-    } catch (e) {
-      state = AsyncError(e, StackTrace.current);
-    }
-  }
-
-  Future<void> signUp(String email, String password) async {
-    state = const AsyncLoading();
-    try {
-      final user = await _repository.signUp(email, password);
-      state = AsyncData(user);
-    } catch (e) {
-      state = AsyncError(e, StackTrace.current);
-    }
-  }
-}
