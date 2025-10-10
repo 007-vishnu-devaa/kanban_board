@@ -14,8 +14,8 @@ class LoginPage extends ConsumerStatefulWidget {
 }
 
 class _LoginPageState extends ConsumerState<LoginPage> {
-  final emailController = TextEditingController(text: 'vishnu123@gmail.com');
-  final passwordController = TextEditingController(text:'Vishnu123@');
+  final emailController = TextEditingController();
+  final passwordController = TextEditingController();
   final ValueNotifier<bool> _obscureTextNotifier = ValueNotifier<bool>(true);
 
   @override
