@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kanbanboard/core/widgets/confirmation_dialog.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/login/presentation/login_page.dart';
@@ -11,48 +12,10 @@ import '../../core/connectivity/connectivity_service.dart';
 class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
-void showConfirmationDialog(BuildContext context) {
-
-  showDialog(
-    context: context,
-    builder: (context) {
-      return AlertDialog(
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12.0)),
-        title: const Text('Confirmation!', textAlign: TextAlign.center, style: TextStyle(fontSize: 18, fontWeight: FontWeight.w600)),
-  content:SizedBox(
-  width: MediaQuery.of(context).size.width,
-  child: Text('Are you sure you want to Sign out ?')),
-        actions: [
-          TextButton(
-            style: OutlinedButton.styleFrom(
-                    side: BorderSide(color: Colors.teal),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(30)),
-                    padding: const EdgeInsets.symmetric(horizontal: 14), 
-                  ),
-            onPressed: () => Navigator.pop(context),
-            child: const Text('No')),
-            SizedBox(width: 2),
-          ElevatedButton(
-             style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.teal, 
-                        foregroundColor: Colors.white,
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(30)),
-                        padding: const EdgeInsets.symmetric(horizontal: 22),
-                      ),
-            onPressed: () async {
-             Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
-             FlutterToast(toastMsg: "Signed out successfully").toast();
-            },
-            child: const Text('Yes'),
-          ),
-        ],
-      );
-    },
-  );
+void okayBtnFunc(BuildContext context){
+ Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+           FlutterToast(toastMsg: "Signed out successfully").toast();
 }
-
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final tasks = ref.watch(taskNotifierProvider);
@@ -71,7 +34,8 @@ void showConfirmationDialog(BuildContext context) {
         leading: SizedBox.shrink(),
         title: const Text('Kanban Board'),actions: [
         IconButton(onPressed: (){
-          showConfirmationDialog(context);
+         ConfirmationDialog().showConfirmationDialog(context: context, title: 'Confirmation!', okayBtnText: 'Yes', cancelBtnText: 'No', isCancelBtnVisible: true, contentMsg: 'Are you sure you want to Sign out ?',
+          onOkayBtnPressed: () => okayBtnFunc(context));
         }, icon: Icon(Icons.logout_rounded, size: 22))
       ],),
       body: Consumer(
