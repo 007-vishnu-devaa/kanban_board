@@ -4,6 +4,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/firebase_options.dart';
 import 'login/presentation/login_page.dart';
 import 'app_root.dart';
+import 'core/auth_storage.dart';
+import 'kanban_board/home_page.dart';
 
 
 Future<void> main() async {
@@ -63,7 +65,18 @@ class MyApp extends StatelessWidget {
           suffixIconColor: colorScheme.primary,
         ),
       ),
-      home: const AppRoot(child: LoginPage()),
+      home: FutureBuilder<bool>(
+        future: AuthStorage.isLoggedIn(),
+        builder: (context, snapshot) {
+          final loggedIn = snapshot.data ?? false;
+          // While loading, show a blank scaffold to avoid flashing
+          if (snapshot.connectionState != ConnectionState.done) {
+            return const Scaffold(body: Center(child: CircularProgressIndicator()));
+          }
+
+          return AppRoot(child: loggedIn ? const HomePage() : const LoginPage());
+        },
+      ),
     );
   }
   

@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
+import 'package:kanbanboard/core/auth_storage.dart';
 import '../../core/widgets/circular_indicator.dart';
 import '../../kanban_board/home_page.dart';
 
@@ -186,6 +187,9 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 state.whenOrNull(
                                   data: (user) {
                                     if (user != null) {
+                                      // Persist login state
+                                      AuthStorage.setLoggedIn(true);
+                                      AuthStorage.saveUser(id: user.uid, email: user.email);
                                       Navigator.pushReplacement(
                                         context,
                                         MaterialPageRoute(

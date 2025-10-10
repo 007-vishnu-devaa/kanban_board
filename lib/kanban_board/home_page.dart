@@ -4,6 +4,7 @@ import 'package:kanbanboard/core/widgets/confirmation_dialog.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/login/presentation/login_page.dart';
+import 'package:kanbanboard/core/auth_storage.dart';
 import '../core/widgets/circular_indicator.dart';
 import 'domain/model/task_entity.dart';
 import 'presentation/providers/task_provider.dart';
@@ -13,8 +14,9 @@ class HomePage extends ConsumerWidget {
   const HomePage({super.key});
 
 void okayBtnFunc(BuildContext context){
- Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
-           FlutterToast(toastMsg: "Signed out successfully").toast();
+  AuthStorage.clear();
+  Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
+  FlutterToast(toastMsg: "Signed out successfully").toast();
 }
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -74,24 +76,20 @@ void okayBtnFunc(BuildContext context){
                           FlutterToast(toastMsg: 'No internet connection.').toast();
                           return;
                         }
-
-                          // Capture providers and messenger now to avoid using ref/context after async gaps
+                     
                           final repo = ref.read(taskRepositoryProvider);
                           final notifier = ref.read(taskNotifierProvider.notifier);
                           final loadingNotifier = ref.read(tasksLoadingProvider.notifier);
                           final oldStatus = data.status;
-
-                          // Optimistic local update
                           
                           notifier.changeTaskStatus(data.id, column);
                           loadingNotifier.state = true;
 
-                          // Perform async update without awaiting here (fire-and-forget pattern using IIFE)
+                         
                           () async {
                             try {
                               await repo.updateTask(data.copyWith(status: column));
                             } catch (e) {
-                              // Rollback local change on error
                               notifier.changeTaskStatus(data.id, oldStatus);
                               FlutterToast(toastMsg: '${data.title} Failed to move task due to: $e').toast();
                             } finally {
@@ -174,7 +172,6 @@ void okayBtnFunc(BuildContext context){
     showDialog(
       context: context,
       builder: (context) {
-        // local mutable state for the dialog
         var isSubmitting = false;
 
         return StatefulBuilder(builder: (context, setState) {
@@ -239,8 +236,6 @@ void okayBtnFunc(BuildContext context){
                           FlutterToast(toastMsg: 'No internet connection. Cannot add task.').toast();
                           return;
                         }
-
-                        // Capture repo before awaiting
                         final repo = ref.read(taskRepositoryProvider);
 
                         // Create task with empty id and let repository assign id
