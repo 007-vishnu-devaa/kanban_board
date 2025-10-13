@@ -1,5 +1,4 @@
 import 'dart:async';
-
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kanbanboard/kanban_board/data/repositories_impl/task_repositories_impl.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';

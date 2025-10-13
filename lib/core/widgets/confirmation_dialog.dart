@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:kanbanboard/core/widgets/circular_indicator.dart';
 
 class ConfirmationDialog {
   void showConfirmationDialog({
@@ -9,14 +8,12 @@ class ConfirmationDialog {
     required VoidCallback onOkayBtnPressed,
     String? cancelBtnText,
     required bool isCancelBtnVisible,
-    required String contentMsg,
-    bool? isIndicatorShow,
+    required String contentMsg
   }) {
     showDialog(
       context: context,
       builder: (context) {
-        return Stack(children: [
-          AlertDialog(
+        return AlertDialog(
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(12.0),
           ),
@@ -39,9 +36,8 @@ class ConfirmationDialog {
                 padding: const EdgeInsets.symmetric(horizontal: 14),
               ),
               onPressed: () => Navigator.pop(context),
-              child: Text(cancelBtnText ?? ''),
+              child: Text(cancelBtnText ?? 'No'),
             ),
-            SizedBox(width: 2),
             ElevatedButton(
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.teal,
@@ -52,15 +48,10 @@ class ConfirmationDialog {
                 padding: const EdgeInsets.symmetric(horizontal: 22),
               ),
               onPressed: onOkayBtnPressed,
-              child: Text(okayBtnText),
+              child: Text(okayBtnText.isEmpty ? 'Yes' : okayBtnText),
             ),
           ],
-        ),
-        if(isIndicatorShow ?? false)
-                            Positioned.fill(
-                    child: CircularIndicator().loading(),
-                  ),
-        ],); 
+        );
       },
     );
   }

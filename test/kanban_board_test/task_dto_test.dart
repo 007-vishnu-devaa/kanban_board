@@ -1,6 +1,4 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:mocktail/mocktail.dart';
 import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 
