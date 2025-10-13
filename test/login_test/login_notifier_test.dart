@@ -1,6 +1,8 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kanbanboard/login/presentation/notifier/auth_notifier.dart';
+import 'package:kanbanboard/login/domain/usecases/login_usecase.dart';
+import 'package:kanbanboard/login/domain/usecases/signup_usecase.dart';
 import 'package:kanbanboard/login/domain/repositories/auth_repositories.dart';
 import 'package:kanbanboard/login/domain/model/user_entity.dart';
 
@@ -26,8 +28,8 @@ class FakeAuthRepository implements AuthRepository {
 
 void main() {
   test('login success sets AsyncData with user', () async {
-    final repo = FakeAuthRepository();
-    final notifier = LoginNotifier(repo);
+  final repo = FakeAuthRepository();
+  final notifier = LoginNotifier(LoginUseCase(repo), SignUpUseCase(repo));
 
     // initial state should be AsyncData(null)
     expect(notifier.state, const AsyncData<UserEntity?>(null));
@@ -43,8 +45,8 @@ void main() {
   });
 
   test('login failure sets AsyncError', () async {
-    final repo = FakeAuthRepository(shouldThrow: true);
-    final notifier = LoginNotifier(repo);
+  final repo = FakeAuthRepository(shouldThrow: true);
+  final notifier = LoginNotifier(LoginUseCase(repo), SignUpUseCase(repo));
 
     await notifier.login('a@b.com', 'bad');
 
@@ -52,8 +54,8 @@ void main() {
   });
 
   test('signUp success sets AsyncData with user', () async {
-    final repo = FakeAuthRepository();
-    final notifier = LoginNotifier(repo);
+  final repo = FakeAuthRepository();
+  final notifier = LoginNotifier(LoginUseCase(repo), SignUpUseCase(repo));
 
     await notifier.signUp('new@example.com', 'password');
 
@@ -66,8 +68,8 @@ void main() {
   });
 
   test('signUp failure sets AsyncError', () async {
-    final repo = FakeAuthRepository(shouldThrow: true);
-    final notifier = LoginNotifier(repo);
+  final repo = FakeAuthRepository(shouldThrow: true);
+  final notifier = LoginNotifier(LoginUseCase(repo), SignUpUseCase(repo));
 
     await notifier.signUp('x@y.com', 'bad');
 

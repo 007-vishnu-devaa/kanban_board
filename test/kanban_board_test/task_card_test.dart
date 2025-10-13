@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kanbanboard/core/app_strings.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/presentation/providers/task_provider.dart';
@@ -85,7 +86,7 @@ void main() {
     await tester.enterText(find.byType(TextField).last, 'New Desc');
 
     // Tap Save
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Save'));
+    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.updateTaskButtonText));
     await tester.pumpAndSettle();
 
     // Verify repo.updateTask was called with updated values
@@ -113,8 +114,8 @@ void main() {
 
     expect(find.text('Confirmation!'), findsOneWidget);
 
-    // Tap Yes to confirm deletion
-    await tester.tap(find.widgetWithText(ElevatedButton, 'Yes'));
+    // Tap Sign Out to confirm deletion
+    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.deleteButtonText));
     await tester.pumpAndSettle();
     // Allow any toast timers to complete.
     await tester.pump(const Duration(seconds: 3));

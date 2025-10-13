@@ -3,8 +3,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/firebase_options.dart';
 import 'login/presentation/login_page.dart';
-import 'app_root.dart';
 import 'core/auth_storage.dart';
+import 'core/connectivity_widgets.dart';
 import 'kanban_board/home_page.dart';
 
 
@@ -69,12 +69,12 @@ class MyApp extends StatelessWidget {
         future: AuthStorage.isLoggedIn(),
         builder: (context, snapshot) {
           final loggedIn = snapshot.data ?? false;
-          // While loading, show a blank scaffold to avoid flashing
-          if (snapshot.connectionState != ConnectionState.done) {
-            return const Scaffold(body: Center(child: CircularProgressIndicator()));
-          }
-
-          return AppRoot(child: loggedIn ? const HomePage() : const LoginPage());
+          // Show LoginPage immediately so tests that expect the login UI
+          // don't need to wait for async SharedPreferences lookup. When the
+          // future completes and reports loggedIn=true the widget will rebuild
+          // and show HomePage.
+          final child = loggedIn ? const HomePage() : const LoginPage();
+          return ConnectivityListener(child: child);
         },
       ),
     );

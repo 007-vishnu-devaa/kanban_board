@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:flutter/services.dart';
+import 'package:kanbanboard/core/app_strings.dart';
 import 'package:kanbanboard/kanban_board/home_page.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/presentation/providers/task_provider.dart';
@@ -75,12 +76,13 @@ void main() {
     expect(find.text('T1'), findsOneWidget);
     expect(find.text('T2'), findsOneWidget);
 
-    // Tap add button -> dialog appears
-    await tester.tap(find.byIcon(Icons.add));
-    await tester.pumpAndSettle();
+  // Tap add button -> dialog appears
+  await tester.tap(find.byIcon(Icons.add));
+  await tester.pumpAndSettle();
 
-    expect(find.text('Add Task'), findsOneWidget);
-    expect(find.text('Save'), findsOneWidget);
+  // The title and the action currently share the same label; assert that
+  // the label appears in the dialog (one or more occurrences is fine).
+  expect(find.text(AppStrings.addTaskText), findsWidgets);
   });
 
   testWidgets('pull to refresh triggers refresh function', (tester) async {
@@ -130,17 +132,17 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Confirmation!'), findsOneWidget);
-    expect(find.text('No'), findsOneWidget);
-    expect(find.text('Yes'), findsOneWidget);
+    expect(find.text(AppStrings.cancelBtnText), findsOneWidget);
+    expect(find.text(AppStrings.signOutOkayBtnText), findsOneWidget);
 
     // Tap No -> dialog should close
-    await tester.tap(find.widgetWithText(TextButton, 'No'));
+    await tester.tap(find.widgetWithText(TextButton, AppStrings.cancelBtnText));
     await tester.pumpAndSettle();
 
     expect(find.text('Confirmation!'), findsNothing);
   });
 
-  testWidgets('Logout Yes navigates to LoginPage and shows toast', (tester) async {
+  testWidgets('Logout Sign Out navigates to LoginPage and shows toast', (tester) async {
     final fakeRepo = FakeTaskRepository([]);
 
     final observer = _TestNavigatorObserver();
@@ -163,8 +165,8 @@ void main() {
     await tester.tap(find.byIcon(Icons.logout_rounded));
     await tester.pumpAndSettle();
 
-  // Tap Yes
-  await tester.tap(find.widgetWithText(ElevatedButton, 'Yes'));
+  // Tap Sign Out
+  await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.signOutOkayBtnText));
   await tester.pump();
 
   // Allow the fluttertoast timer (2s) to run to completion to avoid

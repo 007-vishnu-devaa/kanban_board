@@ -1,5 +1,4 @@
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:kanbanboard/core/widgets/toast.dart';
 import '../../domain/model/user_entity.dart';
 import '../../domain/repositories/auth_repositories.dart';
 
@@ -21,8 +20,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user != null) {
         return UserEntity(uid: user.uid, email: user.email ?? '');
       }
-    } on FirebaseAuthException catch (e) {
-      FlutterToast(toastMsg: e.message ?? 'Please enter valid email and password').toast();
+    } on FirebaseAuthException {
+      return null;
     }
     return null;
   }
@@ -38,8 +37,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user != null) {
         return UserEntity(uid: user.uid, email: user.email ?? '');
       }
-    } on FirebaseAuthException catch (e) {
-      FlutterToast(toastMsg: e.message ?? 'Sign Up failed').toast();
+    } on FirebaseAuthException {
+      return null;
     }
     return null;
   }
