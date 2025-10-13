@@ -174,7 +174,15 @@ void okayBtnFunc(BuildContext context){
                 ),
               );
             case ApiStatus.loading:
-              return  CircularIndicator().loading();
+              // Keep showing the content while displaying a small, non-blocking
+              // loading indicator above it. This ensures users still see data
+              // while long-running operations (like move) are in progress.
+              return Stack(
+                children: [
+                  content,
+                 CircularIndicator().loading()
+                ],
+              );
             case ApiStatus.initial:
             case ApiStatus.success:
               return content;
