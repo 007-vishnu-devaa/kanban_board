@@ -6,7 +6,6 @@ class OfflineDialog {
   const OfflineDialog();
 
   Future<void> showBanner({required BuildContext context, String title = 'No internet connection', String message = AppStrings.offlineText}) async {
-    // showDialog returns when dialog is dismissed
     await showDialog<void>(
       context: context,
       barrierDismissible: true,

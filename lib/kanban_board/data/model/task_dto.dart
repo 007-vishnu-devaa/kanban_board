@@ -14,7 +14,7 @@ class TaskDTO {
     required this.status,
   });
 
-  factory TaskDTO.fromEntity(Task task) {
+  factory TaskDTO.fromEntity(kanbanTaskEntity task) {
     return TaskDTO(
       id: task.id,
       title: task.title,
@@ -23,8 +23,8 @@ class TaskDTO {
     );
   }
 
-  Task toEntity() {
-    return Task(
+  kanbanTaskEntity toEntity() {
+    return kanbanTaskEntity(
       id: id,
       title: title,
       description: description,
@@ -50,42 +50,49 @@ class TaskDTO {
     );
   }
 
-  /// Accepts a [DocumentSnapshot] or a raw Map (or any object that exposes
-  /// a `data()` method returning a Map). This makes the factory easier to
-  /// use in tests where creating a real Firestore [DocumentSnapshot] is
-  /// difficult.
   factory TaskDTO.fromDocument(Object? doc) {
-    Map<String, dynamic> data;
-    if (doc is DocumentSnapshot) {
-      data = doc.data() as Map<String, dynamic>;
-    } else if (doc is Map<String, dynamic>) {
-      data = doc;
-    } else if (doc != null) {
-      // Try to call .data() dynamically (used by some test fakes).
-      try {
-        final dyn = doc as dynamic;
-        // Some fakes expose a `data` getter, others a `data()` method. Try both.
-        try {
-          final maybe = dyn.data;
-          if (maybe is Map<String, dynamic>) {
-            data = maybe;
-          } else if (maybe is Function) {
-            data = maybe();
-          } else {
-            // Fallback to calling as a function
-            data = dyn.data() as Map<String, dynamic>;
-          }
-        } catch (_) {
-          // If accessing dyn.data threw, try calling as a method
-          data = dyn.data() as Map<String, dynamic>;
-        }
-      } catch (e) {
-        throw ArgumentError('Unsupported document type for TaskDTO.fromDocument');
-      }
-    } else {
-      throw ArgumentError('doc must not be null');
-    }
+  Map<String, dynamic>? data;
 
-    return TaskDTO.fromMap(data);
+  
+  if (doc is DocumentSnapshot) {
+    final rawData = doc.data();
+    if (rawData == null) {
+      throw ArgumentError('Document ${doc.id} has no data');
+    }
+    if (rawData is! Map<String, dynamic>) {
+      throw ArgumentError('Document ${doc.id} contains invalid data type');
+    }
+    data = rawData;
   }
+
+  else if (doc is Map<String, dynamic>) {
+    data = doc;
+  }
+
+
+  else if (doc != null) {
+    try {
+      final dyn = doc as dynamic;
+      final dynamic maybeData =
+          (dyn.data is Function) ? dyn.data() : dyn.data;
+
+      if (maybeData == null) {
+        throw ArgumentError('Dynamic document returned null data');
+      }
+      if (maybeData is! Map<String, dynamic>) {
+        throw ArgumentError('Dynamic document returned non-map data');
+      }
+
+      data = maybeData;
+    } catch (e) {
+      throw ArgumentError('Unsupported or invalid document type for TaskDTO.fromDocument: $e');
+    }
+  }
+ 
+  else {
+    throw ArgumentError('Document must not be null');
+  }
+  return TaskDTO.fromMap(data);
+}
+
 }

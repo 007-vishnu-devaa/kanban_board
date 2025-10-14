@@ -20,8 +20,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user != null) {
         return UserEntity(uid: user.uid, email: user.email ?? '');
       }
-    } on FirebaseAuthException {
-      return null;
+    } on FirebaseAuthException catch(firebaseAuthException) {
+      return firebaseAuthException.code == 'user-not-found' ? null : null;
     }
     return null;
   }
@@ -37,8 +37,8 @@ class AuthRepositoryImpl implements AuthRepository {
       if (user != null) {
         return UserEntity(uid: user.uid, email: user.email ?? '');
       }
-    } on FirebaseAuthException {
-      return null;
+    } on FirebaseAuthException catch(firebaseAuthException) {
+      return firebaseAuthException.code == 'email-already-in-use' ? null : null;
     }
     return null;
   }

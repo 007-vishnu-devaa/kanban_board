@@ -10,10 +10,12 @@ import 'kanban_board/home_page.dart';
 
 Future<void> main() async {
     WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp(
-     options: DefaultFirebaseOptions.currentPlatform,
-  );
-  runApp(const ProviderScope(child: MyApp()));
+    final authStorage = AuthStorage();
+    await authStorage.init(); 
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    runApp(const ProviderScope(child: MyApp()));
 }
 
 class MyApp extends StatelessWidget {
@@ -21,6 +23,7 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final auth = AuthStorage();
     const seed = Colors.teal;
     final colorScheme = ColorScheme.fromSeed(seedColor: seed);
 
@@ -66,13 +69,9 @@ class MyApp extends StatelessWidget {
         ),
       ),
       home: FutureBuilder<bool>(
-        future: AuthStorage.isLoggedIn(),
+        future: auth.isLoggedIn(),
         builder: (context, snapshot) {
           final loggedIn = snapshot.data ?? false;
-          // Show LoginPage immediately so tests that expect the login UI
-          // don't need to wait for async SharedPreferences lookup. When the
-          // future completes and reports loggedIn=true the widget will rebuild
-          // and show HomePage.
           final child = loggedIn ? const HomePage() : const LoginPage();
           return ConnectivityListener(child: child);
         },

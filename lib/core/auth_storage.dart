@@ -1,40 +1,44 @@
 import 'package:shared_preferences/shared_preferences.dart';
 
 class AuthStorage {
+  static final AuthStorage _instance = AuthStorage._internal();
+  late SharedPreferences _prefs;
+
+  AuthStorage._internal();
+
+  // Public factory to get the same instance
+  factory AuthStorage() => _instance;
+
   static const _loggedInKey = 'logged_in';
   static const _userIdKey = 'user_id';
   static const _userEmailKey = 'user_email';
 
-  static Future<void> setLoggedIn(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool(_loggedInKey, value);
+
+  Future<void> init() async {
+    _prefs = await SharedPreferences.getInstance();
   }
 
-  static Future<bool> isLoggedIn() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getBool(_loggedInKey) ?? false;
+
+  Future<void> setLoggedIn(bool value) async {
+    await _prefs.setBool(_loggedInKey, value);
   }
 
-  static Future<void> saveUser({required String id, required String email}) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setString(_userIdKey, id);
-    await prefs.setString(_userEmailKey, email);
+
+Future<bool> isLoggedIn() async {
+  return _prefs.getBool(_loggedInKey) ?? false;
+}
+
+Future<void> saveUser({
+    required String id,
+    required String email,
+  }) async {
+    await _prefs.setString(_userIdKey, id);
+    await _prefs.setString(_userEmailKey, email);
   }
 
-  static Future<void> clear() async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.remove(_loggedInKey);
-    await prefs.remove(_userIdKey);
-    await prefs.remove(_userEmailKey);
-  }
-
-  static Future<String?> getUserId() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userIdKey);
-  }
-
-  static Future<String?> getUserEmail() async {
-    final prefs = await SharedPreferences.getInstance();
-    return prefs.getString(_userEmailKey);
+Future<void> clear() async {
+    await _prefs.remove(_loggedInKey);
+    await _prefs.remove(_userIdKey);
+    await _prefs.remove(_userEmailKey);
   }
 }
