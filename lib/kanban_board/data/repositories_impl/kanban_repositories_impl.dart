@@ -4,14 +4,13 @@ import '../../domain/model/kanban_repository.dart';
 import '../../domain/model/task_entity.dart';
 
 class KanbanBoardRepositoryImpl extends KanbanBoardRepositories {
-  final FirebaseFirestore _firestore;
-
-  KanbanBoardRepositoryImpl({FirebaseFirestore? firestore}) : _firestore = firestore ?? FirebaseFirestore.instance;
+  final FirebaseFirestore firestore;
+  KanbanBoardRepositoryImpl({required this.firestore});
 
   @override
   Future<List<kanbanTaskEntity>> getTasks() async {
     try {
-      final snapshot = await _firestore.collection('tasks').get();
+      final snapshot = await firestore.collection('tasks').get();
       return snapshot.docs
           .map((doc) => TaskDTO.fromDocument(doc).toEntity())
           .toList()
@@ -24,7 +23,7 @@ class KanbanBoardRepositoryImpl extends KanbanBoardRepositories {
 @override
   Future<void> addTask(kanbanTaskEntity task) async {
     try {
-      final collection = _firestore.collection('tasks');
+      final collection = firestore.collection('tasks');
       final docRef = (task.id.isEmpty) ? collection.doc() : collection.doc(task.id);
       final assignedId = docRef.id;
       final taskWithId = kanbanTaskEntity(
@@ -43,7 +42,7 @@ class KanbanBoardRepositoryImpl extends KanbanBoardRepositories {
   @override
   Future<void> deleteTask(String id) async {
     try {
-      final docRef = _firestore.collection('tasks').doc(id);
+      final docRef = firestore.collection('tasks').doc(id);
       await docRef.delete();
     } on Exception catch (e) {
       throw Exception('Failed to delete task: $e');
@@ -53,7 +52,7 @@ class KanbanBoardRepositoryImpl extends KanbanBoardRepositories {
    @override
   Future<void> updateTask(kanbanTaskEntity task) async {
     try {
-      final docRef = _firestore.collection('tasks').doc(task.id);
+      final docRef = firestore.collection('tasks').doc(task.id);
       final dto = TaskDTO.fromEntity(task);
       await docRef.set(dto.toMap());
     } on Exception catch (e) {

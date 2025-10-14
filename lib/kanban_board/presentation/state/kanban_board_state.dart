@@ -1,9 +1,8 @@
-import 'package:equatable/equatable.dart';
 import '../../domain/model/task_entity.dart';
 
 enum KanbanBoardApiStatus { initial, loading, success, failure }
 
-class KanbanBoardState extends Equatable {
+class KanbanBoardState {
   final KanbanBoardApiStatus state;
   final KanbanBoardApiStatus dataState;
   final List<kanbanTaskEntity>? kanbanBoardData;
@@ -39,12 +38,4 @@ class KanbanBoardState extends Equatable {
       kanbanBoardSections: ['To Do', 'In Progress', 'Completed']
     );
   }
-
-  @override
-  List<Object?> get props => [
-        state,
-        dataState,
-        kanbanBoardData,
-        kanbanBoardSections,
-      ];
 }

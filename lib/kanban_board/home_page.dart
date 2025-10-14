@@ -30,7 +30,7 @@ class HomePage extends ConsumerStatefulWidget {
   }
 
 void okayBtnFunc(BuildContext context){
-  AuthStorage.clear();
+  AuthStorage().clear();
   Navigator.pushReplacement(context, MaterialPageRoute(builder: (context) => LoginPage()));
   FlutterToast(toastMsg: AppStrings.signOutMessageText).toast();
 }

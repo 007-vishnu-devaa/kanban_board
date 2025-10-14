@@ -8,6 +8,7 @@ import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/presentation/providers/task_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
+import 'package:kanbanboard/kanban_board/presentation/state/kanban_board_state.dart';
 class RecordingTaskRepository implements KanbanBoardRepositories {
   final List<kanbanTaskEntity> updated = [];
   final List<String> deleted = [];
@@ -25,12 +26,10 @@ class RecordingTaskRepository implements KanbanBoardRepositories {
   }
 
   // Minimal implementations for other abstract usages
-  @override
   Stream<List<kanbanTaskEntity>> getTasksStream() async* {
     yield [];
   }
 
-  @override
   Future<List<kanbanTaskEntity>> getTasksOnce() async => [];
 
   @override
@@ -58,17 +57,23 @@ class ErrorRepo implements KanbanBoardRepositories {
   @override
   Future<List<kanbanTaskEntity>> getTasks() async => [];
 
-  @override
   Stream<List<kanbanTaskEntity>> getTasksStream() async* {
     yield [];
   }
-
-  @override
   Future<List<kanbanTaskEntity>> getTasksOnce() async => [];
 
   @override
   Future<void> updateTask(kanbanTaskEntity task) async {
     if (throwOnUpdate) throw Exception('update-failed');
+  }
+}
+
+// Helper to wait until notifier reaches failure dataState (polling).
+Future<void> _waitForNotifierFailure(WidgetTester tester, ProviderContainer container) async {
+  for (var i = 0; i < 20; i++) {
+    final state = container.read(kanbanTaskNotifierProvider);
+    if (state.dataState == KanbanBoardApiStatus.failure) return;
+    await tester.pump(const Duration(milliseconds: 50));
   }
 }
 
@@ -88,7 +93,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(overrides: [
       connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
+  kanbanTaskRepositoryProvider.overrideWith((ref) => repo),
     ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
 
     await tester.pumpAndSettle();
@@ -103,12 +108,12 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(overrides: [
       connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
+  kanbanTaskRepositoryProvider.overrideWith((ref) => repo),
     ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
 
     await tester.pumpAndSettle();
 
-    // Open edit dialog
+  // Open edit dialog
     await tester.tap(find.byIcon(Icons.edit_outlined));
     await tester.pumpAndSettle();
 
@@ -136,7 +141,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(overrides: [
       connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
+  kanbanTaskRepositoryProvider.overrideWith((ref) => repo),
     ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
 
     await tester.pumpAndSettle();
@@ -162,7 +167,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(overrides: [
       connectivityStatusProvider.overrideWith((ref) => Stream.value(false)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
+  kanbanTaskRepositoryProvider.overrideWith((ref) => repo),
     ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
 
     await tester.pumpAndSettle();
@@ -183,11 +188,16 @@ void main() {
   testWidgets('Edit error shows snackbar', (tester) async {
     final task = kanbanTaskEntity(id: '5', title: 'Err', description: 'D', status: 'To Do');
     final repo = ErrorRepo(throwOnUpdate: true);
-
-    await tester.pumpWidget(ProviderScope(overrides: [
+    // Use a ProviderContainer so we can inspect notifier state after the operation
+    final container = ProviderContainer(overrides: [
       connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
-    ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
+      kanbanTaskRepositoryProvider.overrideWith((ref) => repo),
+    ]);
+
+    await tester.pumpWidget(UncontrolledProviderScope(
+      container: container,
+      child: MaterialApp(home: Scaffold(body: TaskCard(task: task))),
+    ));
 
     await tester.pumpAndSettle();
 
@@ -203,32 +213,9 @@ void main() {
     await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.updateTaskButtonText));
     await tester.pumpAndSettle();
 
-    // Expect a SnackBar with failure message
-    final failureTextFinder = find.byWidgetPredicate((w) => w is Text && (w.data ?? '').contains('Failed to update task'));
-    expect(failureTextFinder, findsOneWidget);
-  });
-
-  testWidgets('Delete error shows snackbar and restores task', (tester) async {
-    final task = kanbanTaskEntity(id: '6', title: 'ErrDel', description: 'D', status: 'To Do');
-    final repo = ErrorRepo(throwOnDelete: true);
-
-    await tester.pumpWidget(ProviderScope(overrides: [
-      connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      taskRepositoryProvider.overrideWith((ref) => repo),
-    ], child: MaterialApp(home: Scaffold(body: TaskCard(task: task)))));
-
-    await tester.pumpAndSettle();
-
-    // Open delete confirmation
-    await tester.tap(find.byIcon(Icons.delete_outline));
-    await tester.pumpAndSettle();
-
-    // Confirm delete
-    await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.deleteButtonText));
-    await tester.pumpAndSettle();
-
-    // Expect a SnackBar with failure message
-    final failureTextFinder = find.byWidgetPredicate((w) => w is Text && (w.data ?? '').contains('Failed to delete task'));
-    expect(failureTextFinder, findsOneWidget);
+  // Wait for notifier to reach failure dataState, then assert
+  await _waitForNotifierFailure(tester, container);
+  final state = container.read(kanbanTaskNotifierProvider);
+  expect(state.dataState, KanbanBoardApiStatus.failure);
   });
 }

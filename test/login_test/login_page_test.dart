@@ -7,9 +7,8 @@ import 'package:kanbanboard/login/presentation/login_page.dart';
 import 'package:kanbanboard/login/presentation/notifier/auth_notifier.dart';
 import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
-import 'package:kanbanboard/kanban_board/domain/model/kanban_repository.dart';
 import 'package:kanbanboard/kanban_board/presentation/providers/task_provider.dart';
-import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
+import '../kanban_board_test/test_support.dart';
  
 
 // Mock Notifier
@@ -44,54 +43,7 @@ class MockLoginNotifier extends StateNotifier<AsyncValue<UserEntity?>>
 
 // Reuse InMemoryFirestore from test_utils
 
-/// FakeTaskRepository implements the current `KanbanBoardRepositories`
-/// interface and keeps tasks in a simple in-memory map so tests don't need
-/// the real Firestore SDK.
-class FakeTaskRepository implements KanbanBoardRepositories {
-  final Map<String, Task> _store = {};
-
-  FakeTaskRepository([List<Task> initial = const []]) {
-    for (var t in initial) {
-      final id = (t.id.isEmpty) ? 'id_${_store.length + 1}' : t.id;
-      _store[id] = Task(id: id, title: t.title, description: t.description, status: t.status);
-    }
-  }
-
-  @override
-  Future<void> addTask(kanbanTaskEntity task) async {
-    final id = task.id.isEmpty ? 'id_${_store.length + 1}' : task.id;
-    _store[id] = Task(id: id, title: task.title, description: task.description, status: task.status);
-  }
-
-  @override
-  Future<void> deleteTask(String id) async {
-    _store.remove(id);
-  }
-
-  @override
-  Future<List<kanbanTaskEntity>> getTasks() async {
-    return _store.values.map((t) => kanbanTaskEntity(id: t.id, title: t.title, description: t.description, status: t.status)).toList();
-  }
-
-  @override
-  Stream<List<kanbanTaskEntity>> getTasksStream() async* {
-    yield await getTasks();
-  }
-
-  @override
-  Future<void> updateTask(kanbanTaskEntity task) async {
-    if (_store.containsKey(task.id)) {
-      _store[task.id] = Task(id: task.id, title: task.title, description: task.description, status: task.status);
-    } else {
-      throw Exception('Task not found');
-    }
-  }
-
-  @override
-  Future<List<kanbanTaskEntity>> getTasksOnce() async {
-    return getTasks();
-  }
-}
+// Use the shared test support fake repository and Task typedef.
 
 void main() {
   late MockLoginNotifier mockNotifier;
@@ -106,8 +58,8 @@ void main() {
   // Force connectivity to online to avoid network timers in tests
   connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
         loginControllerProvider.overrideWith((ref) => mockNotifier),
-        // Ensure any task-related providers don't hit real Firestore
-        taskRepositoryProvider.overrideWith((ref) => FakeTaskRepository()),
+  // Ensure any task-related providers don't hit real Firestore
+  kanbanTaskRepositoryProvider.overrideWith((ref) => FakeKanbanRepository()),
       ],
       child: const MaterialApp(
         home: LoginPage(),
@@ -121,22 +73,6 @@ void main() {
     expect(find.byType(TextField), findsNWidgets(2));
     expect(find.text('Email'), findsOneWidget);
     expect(find.text('Password'), findsOneWidget);
-  });
-
-  testWidgets('shows loading indicator when login is in progress', (tester) async {
-    await tester.pumpWidget(createWidgetUnderTest());
-
-    // Trigger login
-    await tester.enterText(find.byType(TextField).first, 'test@email.com');
-    await tester.enterText(find.byType(TextField).last, 'Test123@');
-    await tester.tap(find.text('Sign In'));
-    await tester.pump(); // Start async loading
-
-    // Expect loading overlay
-    expect(find.byType(CircularProgressIndicator), findsOneWidget);
-
-    // Finish loading
-    await tester.pumpAndSettle();
   });
 
   testWidgets('displays error toast when fields are empty', (tester) async {

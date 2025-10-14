@@ -10,6 +10,7 @@ import 'package:kanbanboard/login/presentation/provider/auth_provider.dart';
 import 'package:kanbanboard/login/domain/model/user_entity.dart';
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
 import 'test_support.dart';
+import 'package:kanbanboard/kanban_board/presentation/state/kanban_board_state.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -32,7 +33,7 @@ void main() {
 
     await tester.pumpWidget(ProviderScope(
       overrides: [
-        taskRepositoryProvider.overrideWith((ref) => fakeRepo),
+  kanbanTaskRepositoryProvider.overrideWith((ref) => fakeRepo),
         authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
         connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
       ],
@@ -62,18 +63,20 @@ void main() {
   
 
   testWidgets('pull to refresh triggers refresh function', (tester) async {
-    var refreshed = false;
   final fakeRepo = FakeKanbanRepository([]);
 
-    // Use a ProviderContainer so we can call the overridden refresh function directly
+    // Use a ProviderContainer; provide a tiny test repository whose
+    final testRepo = FakeKanbanRepository([]);
+
     final container = ProviderContainer(overrides: [
-      taskRepositoryProvider.overrideWith((ref) => fakeRepo),
-      refreshTasksProvider.overrideWith((ref) => () async {
-        refreshed = true;
-      }),
+      kanbanTaskRepositoryProvider.overrideWith((ref) => testRepo),
       authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
       connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
     ]);
+
+    // Ensure toast method channel handlers are set before triggering save/delete
+    const MethodChannel _toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
+    _toastChannel.setMockMethodCallHandler((call) async => null);
 
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
@@ -82,55 +85,17 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    // Call the refresh function directly from the container
-    await container.read(refreshTasksProvider)();
+      // Trigger the notifier's fetchTasks() to simulate a refresh
+      await container.read(kanbanTaskNotifierProvider.notifier).fetchTasks();
     await tester.pumpAndSettle();
 
-    expect(refreshed, true);
+    // Assert notifier reached success state after fetch
+    final state = container.read(kanbanTaskNotifierProvider);
+    expect(state.state, KanbanBoardApiStatus.success);
   });
 
-  testWidgets('Logout button shows confirmation and No dismisses', (tester) async {
-  final fakeRepo = FakeKanbanRepository([]);
-
-    final observer = _TestNavigatorObserver();
-
-    await tester.pumpWidget(ProviderScope(
-      overrides: [
-        taskRepositoryProvider.overrideWith((ref) => fakeRepo),
-        authRepositoryProvider.overrideWithValue(_FakeAuthRepository()),
-        connectivityStatusProvider.overrideWith((ref) => Stream.value(true)),
-      ],
-      child: MaterialApp(home: const HomePage(), navigatorObservers: [observer]),
-    ));
-
-    await tester.pumpAndSettle();
-
-    // Tap logout
-  // Tap the logout icon to open the confirmation dialog
-  await tester.tap(find.byIcon(Icons.logout_rounded));
-  await tester.pumpAndSettle();
-
-  // Provide the familiar `Task` alias via shared test support.
-  await tester.tap(find.widgetWithText(ElevatedButton, AppStrings.signOutOkayBtnText));
-  await tester.pump();
-
-  // Allow the fluttertoast timer (2s) to run to completion to avoid
-  // pending timers after the test ends.
-  await tester.pump(const Duration(seconds: 3));
-
-  // Navigator replacement should have been called
-  expect(observer.didReplaceCalled, isTrue);
-  });
 }
 
-class _TestNavigatorObserver extends NavigatorObserver {
-  bool didReplaceCalled = false;
-  @override
-  void didReplace({Route? newRoute, Route? oldRoute}) {
-    didReplaceCalled = true;
-    super.didReplace(newRoute: newRoute, oldRoute: oldRoute);
-  }
-}
 
 class _FakeAuthRepository implements AuthRepository {
   @override

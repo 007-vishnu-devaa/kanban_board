@@ -20,9 +20,9 @@ final connectivityStatusProvider = StreamProvider<bool>((ref) {
     controller.add(hasConnection);
   }();
 
-  ref.onDispose(() {
-    connSub.cancel();
-    controller.close();
+  ref.onDispose(() async {
+   await connSub.cancel();
+   await controller.close();
   });
 
   return controller.stream;

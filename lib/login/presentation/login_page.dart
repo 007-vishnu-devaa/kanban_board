@@ -135,8 +135,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               state.whenOrNull(
                                 data: (user) {
                                   if (user != null) {
-                                    AuthStorage.setLoggedIn(true);
-                                    AuthStorage.saveUser(id: user.uid, email: user.email);
+                                    AuthStorage().setLoggedIn(true);
+                                    AuthStorage().saveUser(id: user.uid, email: user.email);
                                     Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const HomePage()));
                                   }
                                 },
