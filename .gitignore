@@ -8,6 +8,7 @@ pubspec.lock
 .flutter-plugins
 .flutter-plugins-dependencies
 .pub-cache/
+coverage/
 
 # Generated files
 /.dart_tool/
