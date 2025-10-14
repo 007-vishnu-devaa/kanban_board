@@ -14,7 +14,7 @@ class TaskDTO {
     required this.status,
   });
 
-  factory TaskDTO.fromEntity(Task task) {
+  factory TaskDTO.fromEntity(kanbanTaskEntity task) {
     return TaskDTO(
       id: task.id,
       title: task.title,
@@ -23,8 +23,8 @@ class TaskDTO {
     );
   }
 
-  Task toEntity() {
-    return Task(
+  kanbanTaskEntity toEntity() {
+    return kanbanTaskEntity(
       id: id,
       title: title,
       description: description,

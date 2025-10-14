@@ -7,10 +7,10 @@ import '../providers/task_provider.dart';
 import '../../../core/connectivity/connectivity_service.dart';
 
 class TaskCard extends ConsumerWidget {
-  final Task task;
+  final kanbanTaskEntity task;
   const TaskCard({super.key, required this.task});
 
-  void showEditTaskDialog(BuildContext context, WidgetRef ref, Task task) {
+  void showEditTaskDialog(BuildContext context, WidgetRef ref, kanbanTaskEntity task) {
     final titleController = TextEditingController(text: task.title);
     final descController = TextEditingController(text: task.description);
 
@@ -73,7 +73,6 @@ class TaskCard extends ConsumerWidget {
                     ? null
                     : () async {
                         if (titleController.text.trim().isEmpty || descController.text.trim().isEmpty) {
-                          // Show error toast
                           FlutterToast(toastMsg:AppStrings.titleAndDescriptionFieldValidation).toast();
                           return;
                         }
@@ -84,20 +83,17 @@ class TaskCard extends ConsumerWidget {
                           return;
                         }
 
-                        final updateTask = ref.read(updateTaskUseCaseProvider);
-                        final notifier = ref.read(taskNotifierProvider.notifier);
-                        final messenger = ScaffoldMessenger.of(context);
-
                         final updated = task.copyWith(title: titleController.text, description: descController.text);
 
                         setState(() => isSubmitting = true);
                         try {
-                          await updateTask(updated);
-                          notifier.updateTask(updated);
+                          final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
+                           await notifier.updateTask(updated);
+                           await notifier.fetchTasks();
                           if (Navigator.canPop(context)) Navigator.pop(context);
                         } catch (e) {
                           setState(() => isSubmitting = false);
-                          messenger.showSnackBar(SnackBar(content: Text('Failed to update task: $e')));
+                          FlutterToast(toastMsg: 'Failed to update task: $e').toast();
                         }
                       },
                 child: isSubmitting
@@ -121,8 +117,6 @@ class TaskCard extends ConsumerWidget {
               ),
             ],
           );
-          // Keep dialog mounted; inputs/buttons are disabled while
-          // submitting and the button shows an inline spinner.
           return dialog;
         });
       },
@@ -130,7 +124,7 @@ class TaskCard extends ConsumerWidget {
   }
 
 
-void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
+void showConfirmationDialog(BuildContext context, WidgetRef ref, kanbanTaskEntity task) {
   final title = task.title;
 
   showDialog(
@@ -166,27 +160,22 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
         onPressed: isSubmitting
                   ? null
                   : () async {
-                      final deleteTask = ref.read(deleteTaskUseCaseProvider);
-                      final notifier = ref.read(taskNotifierProvider.notifier);
-                      final messenger = ScaffoldMessenger.of(context);
-
                       final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
                       if (!isOnline) {
                         FlutterToast(toastMsg: AppStrings.noInternetConnection).toast();
                         return;
                       }
-
-                      notifier.removeTask(task.id);
-                      setState(() => isSubmitting = true);
-
                       try {
-                        await deleteTask(task.id);
+                       setState(() => isSubmitting = true);
+                       final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
+                        await notifier.deleteTask(task.id);
+                        await notifier.fetchTasks();
                         if (Navigator.canPop(context)) Navigator.pop(context);
                         FlutterToast(toastMsg: '${task.title} deleted successfully').toast();
                       } catch (e) {
-                        notifier.updateTask(task);
+                       
                         setState(() => isSubmitting = false);
-                        messenger.showSnackBar(SnackBar(content: Text('${task.title} Failed to delete task: $e')));
+                        FlutterToast(toastMsg: '${task.title} Failed to delete task: $e').toast();
                       }
                     },
               child: isSubmitting
@@ -210,8 +199,6 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, Task task) {
             ),
           ],
         );
-          // Keep dialog mounted; inputs/buttons are disabled while
-          // submitting and the confirmation button shows an inline spinner.
           return dialog;
       });
     },

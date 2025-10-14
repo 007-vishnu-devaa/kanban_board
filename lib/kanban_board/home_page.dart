@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kanbanboard/core/app_strings.dart';
 import 'package:kanbanboard/core/widgets/confirmation_dialog.dart';
 import 'package:kanbanboard/core/widgets/toast.dart';
+import 'package:kanbanboard/kanban_board/presentation/state/kanban_board_state.dart';
 import 'package:kanbanboard/kanban_board/presentation/widgets/task_card.dart';
 import 'package:kanbanboard/login/presentation/login_page.dart';
 import 'package:kanbanboard/core/auth_storage.dart';
@@ -10,10 +11,23 @@ import '../core/widgets/circular_indicator.dart';
 import 'domain/model/task_entity.dart';
 import 'presentation/providers/task_provider.dart';
 import '../core/connectivity/connectivity_service.dart';
-import '../core/api_response.dart';
 
-class HomePage extends ConsumerWidget {
+
+class HomePage extends ConsumerStatefulWidget {
   const HomePage({super.key});
+  @override
+  ConsumerState<ConsumerStatefulWidget> createState() => _HomePageState();
+}
+
+ class _HomePageState extends ConsumerState<HomePage> {
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+    ref.read(kanbanTaskNotifierProvider.notifier).fetchTasks();
+    });
+  }
 
 void okayBtnFunc(BuildContext context){
   AuthStorage.clear();
@@ -21,15 +35,13 @@ void okayBtnFunc(BuildContext context){
   FlutterToast(toastMsg: AppStrings.signOutMessageText).toast();
 }
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final tasks = ref.watch(taskNotifierProvider);
+  Widget build(BuildContext context) {
+    final kanbanBoardState = ref.watch(kanbanTaskNotifierProvider);
     ref.listen<String?>(firestoreErrorProvider, (prev, next) {
       if (next != null && next.isNotEmpty) {
-        ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('Firestore error: $next')));
+        FlutterToast(toastMsg: 'Firestore error: $next').toast();
       }
     });
-
-    final columns = ['To Do', 'In Progress', 'Completed'];
 
     return Scaffold(
       backgroundColor: Colors.white,
@@ -51,18 +63,18 @@ void okayBtnFunc(BuildContext context){
       ],),
       body: Consumer(
         builder: (context, ref, _) {
-          final tasksOp = ref.watch(tasksOperationProvider);
-          final refresh = ref.read(refreshTasksProvider);
           final errorMsg = ref.watch(firestoreErrorProvider);
 
           Widget content = RefreshIndicator(
-            onRefresh: refresh,
+            onRefresh: () async {
+              await ref.read(kanbanTaskNotifierProvider.notifier).fetchTasks();
+            },
             child: SingleChildScrollView(
               scrollDirection: Axis.horizontal,
               physics: const AlwaysScrollableScrollPhysics(),
               child: Row(
-                children: columns.map((column) {
-                  final columnTasks = tasks.where((t) => t.status == column).toList();
+                children: (kanbanBoardState.kanbanBoardSections ?? []).map((column) {
+                  final columnTasks = kanbanBoardState.kanbanBoardData?.where((t) => t.status == column).toList();
 
                   return Container(
                     width: MediaQuery.of(context).size.width * 0.8,
@@ -76,7 +88,7 @@ void okayBtnFunc(BuildContext context){
                       color: Color(0xfff1f6f8),
                       borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8), bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
                     ),
-                    child: DragTarget<Task>(
+                    child: DragTarget<kanbanTaskEntity>(
                       onWillAccept: (data) => data != null && data.status != column,
                       onAccept: (data) {
                          final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
@@ -84,27 +96,12 @@ void okayBtnFunc(BuildContext context){
                           FlutterToast(toastMsg: AppStrings.noInternetConnection).toast();
                           return;
                         }
-                     
-                        final updateTask = ref.read(updateTaskUseCaseProvider);
-                        final notifier = ref.read(taskNotifierProvider.notifier);
-                        final loadingNotifier = ref.read(tasksOperationProvider.notifier);
-                        final oldStatus = data.status;
-                        
+                        final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
                         notifier.changeTaskStatus(data.id, column);
-                        loadingNotifier.state = const ApiResponse.loading();
-
-                        () async {
-                          try {
-                            await updateTask(data.copyWith(status: column));
-                          } catch (e) {
-                            notifier.changeTaskStatus(data.id, oldStatus);
-                            FlutterToast(toastMsg: '${data.title} Failed to move task due to: $e').toast();
-                          } finally {
-                            loadingNotifier.state = const ApiResponse.success(null);
-                          }
-                        }();
+                        notifier.fetchTasks();
                       },
                       builder: (context, candidateData, rejectedData) {
+                        final isColumnEmpty = columnTasks ?? [];
                         return Column(
                           children: [
                             SizedBox(height: 12),
@@ -118,7 +115,7 @@ void okayBtnFunc(BuildContext context){
                             ),
                             const SizedBox(height: 4),
                             Expanded(
-                              child: columnTasks.isEmpty
+                              child: isColumnEmpty.isEmpty
                                   ? Center(
                                       child: Text(
                                         AppStrings.noDataAvailable,
@@ -129,8 +126,8 @@ void okayBtnFunc(BuildContext context){
                                       ),
                                     )
                                   : ListView(
-                                      children: columnTasks
-                                          .map((task) => Draggable<Task>(
+                                      children: isColumnEmpty
+                                          .map((task) => Draggable<kanbanTaskEntity>(
                                                 data: task,
                                                 feedback: Material(
                                                   elevation: 6,
@@ -155,8 +152,8 @@ void okayBtnFunc(BuildContext context){
             ),
           );
 
-          switch (tasksOp.status) {
-            case ApiStatus.failure:
+          switch (kanbanBoardState.state) {
+            case KanbanBoardApiStatus.failure:
               return SizedBox(
                 width: double.infinity,
                 child: Center(
@@ -166,25 +163,22 @@ void okayBtnFunc(BuildContext context){
                       Text(errorMsg ?? 'Something went wrong'),
                       const SizedBox(height: 12),
                       ElevatedButton(
-                        onPressed: () => ref.read(refreshTasksProvider)(),
+                        onPressed: () => ref.read(kanbanTaskNotifierProvider.notifier).fetchTasks(),
                         child: const Text('Retry'),
                       ),
                     ],
                   ),
                 ),
               );
-            case ApiStatus.loading:
-              // Keep showing the content while displaying a small, non-blocking
-              // loading indicator above it. This ensures users still see data
-              // while long-running operations (like move) are in progress.
+            case KanbanBoardApiStatus.loading:
               return Stack(
                 children: [
                   content,
                  CircularIndicator().loading()
                 ],
               );
-            case ApiStatus.initial:
-            case ApiStatus.success:
+            case KanbanBoardApiStatus.initial:
+            case KanbanBoardApiStatus.success:
               return content;
           }
         },
@@ -258,32 +252,25 @@ void okayBtnFunc(BuildContext context){
             ? null
             : () async {
               if(titleController.text.trim().isEmpty || descriptionController.text.trim().isEmpty) {
-                // Show error toast
                 FlutterToast(toastMsg: AppStrings.titleAndDescriptionFieldValidation).toast();
               } else {
                           final title = titleController.text.trim();
                           final description = descriptionController.text.trim();
 
-                          if (title.isEmpty) return;
-
-                          // Check connectivity before attempting to add
                           final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
                           if (!isOnline) {
                             FlutterToast(toastMsg: AppStrings.noInternetConnection).toast();
                             return;
                           }
-                          final addTask = ref.read(addTaskUseCaseProvider);
 
-                          // Create task with empty id and let repository assign id
-                          final task = Task(id: '', title: title, description: description, status: 'To Do');
-
+                          final task = kanbanTaskEntity(id: '', title: title, description: description, status: 'To Do');
                           setState(() => isSubmitting = true);
                             try {
-                            await addTask(task);
-                            // Close dialog on success
+                            final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
+                              await notifier.addTask(task);
+                              await notifier.fetchTasks();
                             if (Navigator.canPop(context)) Navigator.pop(context);
                           } catch (e) {
-                            // Keep dialog open and re-enable inputs
                             setState(() => isSubmitting = false);
                              FlutterToast(toastMsg: 'Failed to add task: $e').toast();
                           }
@@ -309,15 +296,10 @@ void okayBtnFunc(BuildContext context){
                 ),
               ],
             );
-
-          // Always return the dialog. When submitting, the dialog's
-          // fields and buttons are disabled and the Save button shows a
-          // small inline loading indicator. This avoids using a top-level
-          // Stack overlay that removes widgets from the tree (keeps tests
-          // and accessibility intact).
           return dialog;
         });
       },
     );
   }
+  
 }

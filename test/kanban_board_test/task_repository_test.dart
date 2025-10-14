@@ -1,8 +1,13 @@
 import 'dart:async';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:kanbanboard/kanban_board/data/repositories_impl/task_repositories_impl.dart';
+import 'package:kanbanboard/kanban_board/data/repositories_impl/kanban_repositories_impl.dart';
+import 'package:kanbanboard/kanban_board/domain/model/kanban_repository.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
+
+// Keep tests using the familiar `Task` identifier by aliasing it to the
+// current domain model `kanbanTaskEntity`.
+typedef Task = kanbanTaskEntity;
 
 // Minimal fake Firestore pieces
 class FakeDocSnapshot {
@@ -69,15 +74,15 @@ class FakeFirestore {
 void main() {
   group('TaskRepository with fake firestore', () {
     late FakeFirestore fakeFs;
-    late TaskRepository repo;
+    late KanbanBoardRepositories repo;
 
     setUp(() {
       fakeFs = FakeFirestore();
-      repo = TaskRepository(firestore: fakeFs as dynamic);
+    repo = KanbanBoardRepositoryImpl(fakeFs as dynamic);
     });
 
     test('addTask assigns id and stores document', () async {
-      final task = Task(id: '', title: 'A', description: 'B', status: 'todo');
+  final task = Task(id: '', title: 'A', description: 'B', status: 'todo');
       await repo.addTask(task);
 
       final snapshot = await fakeFs.collection('tasks').get();
@@ -88,7 +93,7 @@ void main() {
     });
 
     test('updateTask overwrites document', () async {
-      final task = Task(id: 'x', title: 'X', description: 'D', status: 'todo');
+  final task = Task(id: 'x', title: 'X', description: 'D', status: 'todo');
       await fakeFs.collection('tasks').setDoc('x', TaskDTO.fromEntity(task).toMap());
 
       final updated = task.copyWith(title: 'X2');
@@ -100,7 +105,7 @@ void main() {
     });
 
     test('deleteTask removes document', () async {
-      final task = Task(id: 'del', title: 'D', description: 'D', status: 'todo');
+  final task = Task(id: 'del', title: 'D', description: 'D', status: 'todo');
       await fakeFs.collection('tasks').setDoc('del', TaskDTO.fromEntity(task).toMap());
       await repo.deleteTask('del');
   final snap = await fakeFs.collection('tasks').get();
@@ -108,7 +113,7 @@ void main() {
     });
 
     test('getTasksOnce returns stored tasks', () async {
-      final t1 = Task(id: 'a', title: 'A', description: 'd', status: 'todo');
+  final t1 = Task(id: 'a', title: 'A', description: 'd', status: 'todo');
       await fakeFs.collection('tasks').setDoc('a', TaskDTO.fromEntity(t1).toMap());
       final tasks = await repo.getTasksOnce();
       expect(tasks.any((t) => t.id == 'a'), true);
@@ -119,7 +124,7 @@ void main() {
       final events = <List<Task>>[];
       final sub = stream.listen((list) => events.add(list));
 
-      final t1 = Task(id: 's1', title: 'S1', description: 'd', status: 'todo');
+  final t1 = Task(id: 's1', title: 'S1', description: 'd', status: 'todo');
       await fakeFs.collection('tasks').setDoc('s1', TaskDTO.fromEntity(t1).toMap());
       // Give time for stream event
       await Future.delayed(Duration(milliseconds: 10));

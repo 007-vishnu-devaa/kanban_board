@@ -34,26 +34,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
     final connectivity = ref.watch(connectivityStatusProvider);
     final isOnline = connectivity.asData?.value ?? true;
 
-    ref.listen(loginControllerProvider, (prev, next) {
-      next.whenOrNull(
-        data: (user) {
-          if (user != null && mounted) {
-          }
-        },
-        error: (err, _) {
-          if (mounted) {
-            FlutterToast(toastMsg: err.toString()).toast();
-          }
-        },
-      );
-    });
-
-    // Always render the page UI so widgets like buttons remain in the tree
-    // (tests depend on that). Show a loader overlay inside the page UI when
-    // login is in progress (pageUI will handle the overlay based on isLoading).
     return Scaffold(
-      body: pageUI(context: context, isLoading: loginState.isLoading, isOnline: isOnline),
-    );
+      body: pageUI(context: context, isLoading: loginState.isLoading, isOnline: isOnline));
   }
 
   Widget pageUI({required BuildContext context, required bool isLoading, required bool isOnline}) {
@@ -73,8 +55,7 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                 BoxShadow(
                   color: Colors.black26,
                   blurRadius: 8.0,
-                  offset: Offset(0, 2),
-                ),
+                  offset: Offset(0, 2)),
               ],
             ),
             child: Column(
@@ -95,23 +76,13 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     decoration: InputDecoration(
                       labelText: AppStrings.emailTextFieldText,
                       labelStyle: TextStyle(color: Colors.grey[600]),
-                      border: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6.0),
-                      ),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(6.0),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                        horizontal: 16,
-                        vertical: 12,
-                      ),
+                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0)),
+                      focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6.0) ),
+                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       prefixIcon: Icon(
                         Icons.person_2_outlined,
-                        color: Colors.grey[600],
-                      ),
-                    ),
-                  ),
-                ),
+                        color: Colors.grey[600]
+                      )))),
 
                 const SizedBox(height: 12),
                 ValueListenableBuilder<bool>(
@@ -129,39 +100,25 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                       decoration: InputDecoration(
                         labelText: AppStrings.passwordTextFieldText,
                         labelStyle: TextStyle(color: Colors.grey[600]),
-                        border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
+                        border: OutlineInputBorder( borderRadius: BorderRadius.circular(6)),
                         enabledBorder: OutlineInputBorder(
                           borderRadius: BorderRadius.circular(6),
-                          borderSide: const BorderSide(color: Colors.grey),
-                        ),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 16,
-                          vertical: 12,
-                        ),
-                        prefixIcon: Icon(
-                          Icons.lock_outline,
-                          color: Colors.grey[600],
-                        ),
+                          borderSide: const BorderSide(color: Colors.grey)),
+                        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(6)),
+                        contentPadding: const EdgeInsets.symmetric( horizontal: 16, vertical: 12 ),
+                        prefixIcon: Icon( Icons.lock_outline, color: Colors.grey[600]),
                         suffixIcon: IconButton(
                           icon: Icon(
                             obscureText ? Icons.visibility_off : Icons.visibility,
                             color: !obscureText ? Colors.teal : Colors.grey[600],
                           ),
                           onPressed: isLoading
-                              ? null
-                              : () {
+                              ? null : () {
                                   if (passwordController.text.isNotEmpty) {
                                     _obscureTextNotifier.value = !obscureText;
                                   }
                                 },
-                        ),
-                      ),
-                    );
+                        )));
                   },
                 ),
                 const SizedBox(height: 20),
@@ -169,26 +126,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                   width: MediaQuery.of(context).size.width / 2,
                   child: ElevatedButton(
                     onPressed: (!isOnline || isLoading)
-                        ? null
-                        : () async {
+                        ? null : () async {
                             if (emailController.text.isEmpty || passwordController.text.isEmpty) {
                               FlutterToast(toastMsg: AppStrings.textFieldValidationText).toast();
                             } else {
                               await ref.read(loginControllerProvider.notifier).login(emailController.text.trim(), passwordController.text.trim());
-                              if (!mounted) return;
                               final state = ref.read(loginControllerProvider);
                               state.whenOrNull(
                                 data: (user) {
                                   if (user != null) {
-                                    // Persist login state
                                     AuthStorage.setLoggedIn(true);
                                     AuthStorage.saveUser(id: user.uid, email: user.email);
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const HomePage(),
-                                      ),
-                                    );
+                                    Navigator.pushReplacement( context, MaterialPageRoute(builder: (_) => const HomePage()));
                                   }
                                 },
                               );
@@ -197,13 +146,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.teal,
                       foregroundColor: Colors.white,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30), // Corner radius
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        vertical: 14,
-                      ), // Height
-                    ),
+                      shape: RoundedRectangleBorder( borderRadius: BorderRadius.circular(30)),
+                      padding: const EdgeInsets.symmetric(vertical: 14)),
                     child: isLoading
                         ? Row(
                             mainAxisAlignment: MainAxisAlignment.center,
@@ -214,22 +158,12 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                                 height: 18,
                                 child: CircularProgressIndicator(
                                   strokeWidth: 2,
-                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
-                                ),
-                              ),
+                                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white))),
                               SizedBox(width: 12),
-                              Text(
-                                AppStrings.loginButtonText,
-                                style: TextStyle(fontSize: 16),
-                              ),
+                              Text(AppStrings.loginButtonText, style: TextStyle(fontSize: 16)),
                             ],
                           )
-                        : const Text(
-                            AppStrings.loginButtonText,
-                            style: TextStyle(fontSize: 16),
-                          ),
-                  ),
-                ),
+                        : const Text(AppStrings.loginButtonText, style: TextStyle(fontSize: 16)))),
                 const SizedBox(height: 12),
                 const Text('or'),
                 const SizedBox(height: 12),
@@ -239,9 +173,8 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                     style: OutlinedButton.styleFrom(
                       side: BorderSide(color: Colors.teal),
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(30), // Corner radius
-                      ),
-                      padding: const EdgeInsets.symmetric(vertical: 14), // Height
+                        borderRadius: BorderRadius.circular(30)),
+                      padding: const EdgeInsets.symmetric(vertical: 14),
                     ),
                     onPressed: (!isOnline || isLoading)
                         ? null
@@ -250,30 +183,18 @@ class _LoginPageState extends ConsumerState<LoginPage> {
                               FlutterToast(toastMsg: AppStrings.textFieldValidationText).toast();
                             } else {
                               await ref.read(loginControllerProvider.notifier).signUp(emailController.text.trim(), passwordController.text.trim());
-                              if (!mounted) return;
                               final state = ref.read(loginControllerProvider);
                               state.whenOrNull(
                                 data: (user) {
                                   if (user != null) {
-                                    Navigator.pushReplacement(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder: (_) => const HomePage(),
-                                      ),
-                                    );
+                                    Navigator.pushReplacement(context, MaterialPageRoute( builder: (_) => const HomePage()));
                                   }
                                 },
                               );
                             }
                           },
-                    child: const Text(AppStrings.signUpButtonText, style: TextStyle(fontSize: 16)),
-                  ),
-                ),
+                    child: const Text(AppStrings.signUpButtonText, style: TextStyle(fontSize: 16))))
               ],
-            ),
-          ),
-        ),
-      ),
-    );
+            )))));
   }
   }

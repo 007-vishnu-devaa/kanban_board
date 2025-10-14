@@ -69,10 +69,6 @@ class MyApp extends StatelessWidget {
         future: AuthStorage.isLoggedIn(),
         builder: (context, snapshot) {
           final loggedIn = snapshot.data ?? false;
-          // Show LoginPage immediately so tests that expect the login UI
-          // don't need to wait for async SharedPreferences lookup. When the
-          // future completes and reports loggedIn=true the widget will rebuild
-          // and show HomePage.
           final child = loggedIn ? const HomePage() : const LoginPage();
           return ConnectivityListener(child: child);
         },

@@ -2,6 +2,10 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 
+// Keep tests using the familiar `Task` identifier by aliasing it to the
+// current domain model `kanbanTaskEntity`.
+typedef Task = kanbanTaskEntity;
+
 class FakeDoc {
   final Map<String, dynamic> _data;
   FakeDoc(this._data);
