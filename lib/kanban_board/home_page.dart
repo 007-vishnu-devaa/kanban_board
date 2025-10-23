@@ -88,16 +88,16 @@ void okayBtnFunc(BuildContext context){
                       color: Color(0xfff1f6f8),
                       borderRadius: BorderRadius.only(topLeft: Radius.circular(8), topRight: Radius.circular(8), bottomLeft: Radius.circular(16), bottomRight: Radius.circular(16))
                     ),
-                    child: DragTarget<kanbanTaskEntity>(
-                      onWillAccept: (data) => data != null && data.status != column,
-                      onAccept: (data) {
+                    child: DragTarget<KanbanTaskEntity>(
+                      onWillAcceptWithDetails: (data) => data.data.status != column,
+                      onAcceptWithDetails: (data) {
                          final isOnline = ref.read(connectivityStatusProvider).asData?.value ?? true;
                         if (!isOnline) {
                           FlutterToast(toastMsg: AppStrings.noInternetConnection).toast();
                           return;
                         }
                         final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
-                        notifier.changeTaskStatus(data.id, column);
+                        notifier.changeTaskStatus(data.data.id, column);
                         notifier.fetchTasks();
                       },
                       builder: (context, candidateData, rejectedData) {
@@ -127,7 +127,7 @@ void okayBtnFunc(BuildContext context){
                                     )
                                   : ListView(
                                       children: isColumnEmpty
-                                          .map((task) => Draggable<kanbanTaskEntity>(
+                                          .map((task) => Draggable<KanbanTaskEntity>(
                                                 data: task,
                                                 feedback: Material(
                                                   elevation: 6,
@@ -263,12 +263,13 @@ void okayBtnFunc(BuildContext context){
                             return;
                           }
 
-                          final task = kanbanTaskEntity(id: '', title: title, description: description, status: 'To Do');
+                          final task = KanbanTaskEntity(id: '', title: title, description: description, status: 'To Do');
                           setState(() => isSubmitting = true);
                             try {
                             final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
                               await notifier.addTask(task);
                               await notifier.fetchTasks();
+                              if (!context.mounted) return;
                             if (Navigator.canPop(context)) Navigator.pop(context);
                           } catch (e) {
                             setState(() => isSubmitting = false);

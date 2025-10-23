@@ -18,7 +18,7 @@ class KanbanTaskNotifier extends StateNotifier<KanbanBoardState> {
       state = state.copyWith(state: KanbanBoardApiStatus.failure);
     }
   } 
-  Future<void> addTask(kanbanTaskEntity task) async {
+  Future<void> addTask(KanbanTaskEntity task) async {
     state = state.copyWith(dataState: KanbanBoardApiStatus.loading);
     try {
       await repository.addTask(task);
@@ -27,7 +27,7 @@ class KanbanTaskNotifier extends StateNotifier<KanbanBoardState> {
       state = state.copyWith(dataState: KanbanBoardApiStatus.failure);
     }
   }
-  Future<void> updateTask(kanbanTaskEntity task) async {
+  Future<void> updateTask(KanbanTaskEntity task) async {
     state = state.copyWith(dataState: KanbanBoardApiStatus.loading);
     try {
       await repository.updateTask(task);

@@ -7,10 +7,10 @@ import '../providers/task_provider.dart';
 import '../../../core/connectivity/connectivity_service.dart';
 
 class TaskCard extends ConsumerWidget {
-  final kanbanTaskEntity task;
+  final KanbanTaskEntity task;
   const TaskCard({super.key, required this.task});
 
-  void showEditTaskDialog(BuildContext context, WidgetRef ref, kanbanTaskEntity task) {
+  void showEditTaskDialog(BuildContext context, WidgetRef ref, KanbanTaskEntity task) {
     final titleController = TextEditingController(text: task.title);
     final descController = TextEditingController(text: task.description);
 
@@ -90,6 +90,7 @@ class TaskCard extends ConsumerWidget {
                           final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
                            await notifier.updateTask(updated);
                            await notifier.fetchTasks();
+                           if (!context.mounted) return;
                           if (Navigator.canPop(context)) Navigator.pop(context);
                         } catch (e) {
                           setState(() => isSubmitting = false);
@@ -124,7 +125,7 @@ class TaskCard extends ConsumerWidget {
   }
 
 
-void showConfirmationDialog(BuildContext context, WidgetRef ref, kanbanTaskEntity task) {
+void showConfirmationDialog(BuildContext context, WidgetRef ref, KanbanTaskEntity task) {
   final title = task.title;
 
   showDialog(
@@ -170,6 +171,7 @@ void showConfirmationDialog(BuildContext context, WidgetRef ref, kanbanTaskEntit
                        final notifier = ref.read(kanbanTaskNotifierProvider.notifier);
                         await notifier.deleteTask(task.id);
                         await notifier.fetchTasks();
+                        if (!context.mounted) return;
                         if (Navigator.canPop(context)) Navigator.pop(context);
                         FlutterToast(toastMsg: '${task.title} deleted successfully').toast();
                       } catch (e) {

@@ -5,7 +5,7 @@ enum KanbanBoardApiStatus { initial, loading, success, failure }
 class KanbanBoardState {
   final KanbanBoardApiStatus state;
   final KanbanBoardApiStatus dataState;
-  final List<kanbanTaskEntity>? kanbanBoardData;
+  final List<KanbanTaskEntity>? kanbanBoardData;
   final List<String>? kanbanBoardSections;
 
 
@@ -28,7 +28,7 @@ class KanbanBoardState {
   KanbanBoardState copyWith({
     KanbanBoardApiStatus? state,
     KanbanBoardApiStatus? dataState,
-    List<kanbanTaskEntity>? kanbanBoardData,
+    List<KanbanTaskEntity>? kanbanBoardData,
     List<String>? kanbanBoardSections,
   }) {
     return KanbanBoardState(

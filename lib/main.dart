@@ -56,7 +56,7 @@ class MyApp extends StatelessWidget {
         ),
         textSelectionTheme: TextSelectionThemeData(
           cursorColor: colorScheme.primary,
-          selectionColor: colorScheme.primary.withOpacity(0.3),
+          selectionColor: colorScheme.primary.withValues(alpha:0.3),
           selectionHandleColor: colorScheme.primary,
         ),
         inputDecorationTheme: InputDecorationTheme(

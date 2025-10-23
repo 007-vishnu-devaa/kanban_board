@@ -10,13 +10,13 @@ import 'package:kanbanboard/kanban_board/presentation/providers/task_provider.da
 import 'package:kanbanboard/core/connectivity/connectivity_service.dart';
 import 'package:kanbanboard/kanban_board/presentation/state/kanban_board_state.dart';
 class RecordingTaskRepository implements KanbanBoardRepositories {
-  final List<kanbanTaskEntity> updated = [];
+  final List<KanbanTaskEntity> updated = [];
   final List<String> deleted = [];
 
   RecordingTaskRepository();
 
   @override
-  Future<void> updateTask(kanbanTaskEntity task) async {
+  Future<void> updateTask(KanbanTaskEntity task) async {
     updated.add(task);
   }
 
@@ -26,17 +26,17 @@ class RecordingTaskRepository implements KanbanBoardRepositories {
   }
 
   // Minimal implementations for other abstract usages
-  Stream<List<kanbanTaskEntity>> getTasksStream() async* {
+  Stream<List<KanbanTaskEntity>> getTasksStream() async* {
     yield [];
   }
 
-  Future<List<kanbanTaskEntity>> getTasksOnce() async => [];
+  Future<List<KanbanTaskEntity>> getTasksOnce() async => [];
 
   @override
-  Future<void> addTask(kanbanTaskEntity task) async {}
+  Future<void> addTask(KanbanTaskEntity task) async {}
   
   @override
-  Future<List<kanbanTaskEntity>> getTasks() {
+  Future<List<KanbanTaskEntity>> getTasks() {
     return Future.value([]);
   }
 }
@@ -47,7 +47,7 @@ class ErrorRepo implements KanbanBoardRepositories {
   ErrorRepo({this.throwOnUpdate = false, this.throwOnDelete = false});
 
   @override
-  Future<void> addTask(kanbanTaskEntity task) async {}
+  Future<void> addTask(KanbanTaskEntity task) async {}
 
   @override
   Future<void> deleteTask(String id) async {
@@ -55,15 +55,15 @@ class ErrorRepo implements KanbanBoardRepositories {
   }
 
   @override
-  Future<List<kanbanTaskEntity>> getTasks() async => [];
+  Future<List<KanbanTaskEntity>> getTasks() async => [];
 
-  Stream<List<kanbanTaskEntity>> getTasksStream() async* {
+  Stream<List<KanbanTaskEntity>> getTasksStream() async* {
     yield [];
   }
-  Future<List<kanbanTaskEntity>> getTasksOnce() async => [];
+  Future<List<KanbanTaskEntity>> getTasksOnce() async => [];
 
   @override
-  Future<void> updateTask(kanbanTaskEntity task) async {
+  Future<void> updateTask(KanbanTaskEntity task) async {
     if (throwOnUpdate) throw Exception('update-failed');
   }
 }
@@ -79,16 +79,16 @@ Future<void> _waitForNotifierFailure(WidgetTester tester, ProviderContainer cont
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const MethodChannel _toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
+  const MethodChannel toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
   setUpAll(() {
-    _toastChannel.setMockMethodCallHandler((call) async => null);
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, (call) async => null);
   });
   tearDownAll(() {
-    _toastChannel.setMockMethodCallHandler(null);
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, null);
   });
 
   testWidgets('TaskCard shows title and description', (tester) async {
-    final task = kanbanTaskEntity(id: '1', title: 'Hello', description: 'Desc', status: 'To Do');
+    final task = KanbanTaskEntity(id: '1', title: 'Hello', description: 'Desc', status: 'To Do');
     final repo = RecordingTaskRepository();
 
     await tester.pumpWidget(ProviderScope(overrides: [
@@ -103,7 +103,7 @@ void main() {
   });
 
   testWidgets('Edit dialog saves and calls updateTask', (tester) async {
-    final task = kanbanTaskEntity(id: '2', title: 'Old', description: 'OldDesc', status: 'To Do');
+    final task = KanbanTaskEntity(id: '2', title: 'Old', description: 'OldDesc', status: 'To Do');
     final repo = RecordingTaskRepository();
 
     await tester.pumpWidget(ProviderScope(overrides: [
@@ -136,7 +136,7 @@ void main() {
   });
 
   testWidgets('Delete confirmation calls deleteTask', (tester) async {
-    final task = kanbanTaskEntity(id: '3', title: 'ToDelete', description: 'D', status: 'To Do');
+    final task = KanbanTaskEntity(id: '3', title: 'ToDelete', description: 'D', status: 'To Do');
     final repo = RecordingTaskRepository();
 
     await tester.pumpWidget(ProviderScope(overrides: [
@@ -162,7 +162,7 @@ void main() {
   });
 
   testWidgets('Icon buttons are disabled when offline', (tester) async {
-    final task = kanbanTaskEntity(id: '4', title: 'Offline', description: 'D', status: 'To Do');
+    final task = KanbanTaskEntity(id: '4', title: 'Offline', description: 'D', status: 'To Do');
     final repo = RecordingTaskRepository();
 
     await tester.pumpWidget(ProviderScope(overrides: [
@@ -186,7 +186,7 @@ void main() {
   });
 
   testWidgets('Edit error shows snackbar', (tester) async {
-    final task = kanbanTaskEntity(id: '5', title: 'Err', description: 'D', status: 'To Do');
+    final task = KanbanTaskEntity(id: '5', title: 'Err', description: 'D', status: 'To Do');
     final repo = ErrorRepo(throwOnUpdate: true);
     // Use a ProviderContainer so we can inspect notifier state after the operation
     final container = ProviderContainer(overrides: [

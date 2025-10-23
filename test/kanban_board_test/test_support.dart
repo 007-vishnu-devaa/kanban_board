@@ -2,19 +2,19 @@ import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/domain/model/kanban_repository.dart';
 
 // Keep tests using the familiar `Task` identifier by aliasing it to the
-// current domain model `kanbanTaskEntity`.
-typedef Task = kanbanTaskEntity;
+// current domain model `KanbanTaskEntity`.
+typedef Task = KanbanTaskEntity;
 
 /// A tiny in-memory fake repository implementing the production
 /// `KanbanBoardRepositories` interface. Tests can construct it with an
 /// initial list of tasks and then pass it into provider overrides.
 class FakeKanbanRepository implements KanbanBoardRepositories {
-  final List<kanbanTaskEntity> _items;
+  final List<KanbanTaskEntity> _items;
 
-  FakeKanbanRepository([List<kanbanTaskEntity> initial = const []]) : _items = List.from(initial);
+  FakeKanbanRepository([List<KanbanTaskEntity> initial = const []]) : _items = List.from(initial);
 
   @override
-  Future<void> addTask(kanbanTaskEntity task) async {
+  Future<void> addTask(KanbanTaskEntity task) async {
     _items.add(task);
   }
 
@@ -24,18 +24,10 @@ class FakeKanbanRepository implements KanbanBoardRepositories {
   }
 
   @override
-  Future<List<kanbanTaskEntity>> getTasks() async => List.from(_items);
+  Future<List<KanbanTaskEntity>> getTasks() async => List.from(_items);
 
   @override
-  Stream<List<kanbanTaskEntity>> getTasksStream() async* {
-    yield List.from(_items);
-  }
-
-  @override
-  Future<List<kanbanTaskEntity>> getTasksOnce() async => List.from(_items);
-
-  @override
-  Future<void> updateTask(kanbanTaskEntity task) async {
+  Future<void> updateTask(KanbanTaskEntity task) async {
     final idx = _items.indexWhere((t) => t.id == task.id);
     if (idx >= 0) _items[idx] = task;
   }
