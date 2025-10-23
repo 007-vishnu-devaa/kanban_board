@@ -3,8 +3,8 @@ import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
 import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 
 // Keep tests using the familiar `Task` identifier by aliasing it to the
-// current domain model `kanbanTaskEntity`.
-typedef Task = kanbanTaskEntity;
+// current domain model `KanbanTaskEntity`.
+typedef Task = KanbanTaskEntity;
 
 class FakeDoc {
   final Map<String, dynamic> _data;

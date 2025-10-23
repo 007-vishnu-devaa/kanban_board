@@ -13,13 +13,13 @@ void main() {
   // Ensure Flutter bindings are initialized because AuthRepositoryImpl's
   // error path shows a Flutter toast which uses platform channels.
   TestWidgetsFlutterBinding.ensureInitialized();
-  const MethodChannel _toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
+  const MethodChannel toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
   setUpAll(() {
     // Prevent MissingPluginException by stubbing the fluttertoast method channel.
-    _toastChannel.setMockMethodCallHandler((call) async => null);
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, (call) async => null);
   });
   tearDownAll(() {
-    _toastChannel.setMockMethodCallHandler(null);
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, null);
   });
   late MockFirebaseAuth mockAuth;
   late AuthRepositoryImpl repo;

@@ -5,8 +5,8 @@ import 'package:kanbanboard/kanban_board/domain/model/task_entity.dart';
 import 'package:kanbanboard/kanban_board/data/model/task_dto.dart';
 
 // Keep tests using the familiar `Task` identifier by aliasing it to the
-// current domain model `kanbanTaskEntity`.
-typedef Task = kanbanTaskEntity;
+// current domain model `KanbanTaskEntity`.
+typedef Task = KanbanTaskEntity;
 
 // Minimal fake Firestore pieces
 class FakeDocSnapshot {
@@ -77,11 +77,11 @@ class TestRepo implements KanbanBoardRepositories {
   TestRepo(this._fs);
 
   @override
-  Future<void> addTask(kanbanTaskEntity task) async {
+  Future<void> addTask(KanbanTaskEntity task) async {
     final collection = _fs.collection('tasks');
     final docRef = task.id.isEmpty ? collection.doc() : collection.doc(task.id);
     final assignedId = docRef.id;
-    final taskWithId = kanbanTaskEntity(
+    final taskWithId = KanbanTaskEntity(
       id: assignedId,
       title: task.title,
       description: task.description,
@@ -96,18 +96,14 @@ class TestRepo implements KanbanBoardRepositories {
   }
 
   @override
-  Future<List<kanbanTaskEntity>> getTasks() async {
+  Future<List<KanbanTaskEntity>> getTasks() async {
     final snap = await _fs.collection('tasks').get();
     return snap.docs.map((d) => TaskDTO.fromMap(d.data()).toEntity()).toList();
   }
 
-  @override
-  Stream<List<kanbanTaskEntity>> getTasksStream() async* {
-    yield await getTasks();
-  }
 
   @override
-  Future<void> updateTask(kanbanTaskEntity task) async {
+  Future<void> updateTask(KanbanTaskEntity task) async {
     await _fs.collection('tasks').setDoc(task.id, TaskDTO.fromEntity(task).toMap());
   }
 }

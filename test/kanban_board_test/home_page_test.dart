@@ -14,13 +14,13 @@ import 'package:kanbanboard/kanban_board/presentation/state/kanban_board_state.d
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  const MethodChannel _toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
+  const MethodChannel toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
 
   setUpAll(() {
-    _toastChannel.setMockMethodCallHandler((call) async => null);
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, (call) async => null);
   });
   tearDownAll(() {
-    _toastChannel.setMockMethodCallHandler(null);
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, null);
   });
 
   testWidgets('HomePage shows columns and tasks, add dialog opens', (tester) async {
@@ -63,7 +63,6 @@ void main() {
   
 
   testWidgets('pull to refresh triggers refresh function', (tester) async {
-  final fakeRepo = FakeKanbanRepository([]);
 
     // Use a ProviderContainer; provide a tiny test repository whose
     final testRepo = FakeKanbanRepository([]);
@@ -75,8 +74,8 @@ void main() {
     ]);
 
     // Ensure toast method channel handlers are set before triggering save/delete
-    const MethodChannel _toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
-    _toastChannel.setMockMethodCallHandler((call) async => null);
+    const MethodChannel toastChannel = MethodChannel('PonnamKarthik/fluttertoast');
+     TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger.setMockMethodCallHandler(toastChannel, (call) async => null);
 
     await tester.pumpWidget(UncontrolledProviderScope(
       container: container,
